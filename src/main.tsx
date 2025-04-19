@@ -11,3 +11,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     </div>
   </React.StrictMode>,
 )
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    window.ipc.quit()
+  }
+})

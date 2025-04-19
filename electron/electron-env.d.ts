@@ -8,5 +8,5 @@ declare namespace NodeJS {
 }
 
 interface Window {
-  ipc: IPC,
+  ipc: typeof import("./main").IPC,
 }
