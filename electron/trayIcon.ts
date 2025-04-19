@@ -1,29 +1,30 @@
 import path from "path"
 import { Menu, nativeImage, Tray } from "electron"
-import { AppState } from "./appState"
+import { Observable } from "rxjs"
 
 export class TrayIcon {
   private tray: Tray
   private readonly activeTrayIcon: Electron.NativeImage
   private readonly inactiveTrayIcon: Electron.NativeImage
   
-  private isActive = false
+  private _isActive = false
 
-  constructor(
-    private vitePublicDirectory: string,
-    private appState: AppState,
-    private isWindowVisible: () => boolean,
-    private setWindowVisible: (visible: boolean) => void,
-    private quit: () => void,
-  ) {
-    this.activeTrayIcon = nativeImage.createFromPath(path.join(this.vitePublicDirectory, "tray_icon_active.png"))
-    this.inactiveTrayIcon = nativeImage.createFromPath(path.join(this.vitePublicDirectory, "tray_icon_inactive.png"))
+  constructor({ vitePublicDirectory, isActive, toggleActive, isWindowVisible, setWindowVisible, quit }: {
+    vitePublicDirectory: string,
+    isActive: Observable<boolean>,
+    toggleActive: () => void,
+    isWindowVisible: () => boolean,
+    setWindowVisible: (visible: boolean) => void,
+    quit: () => void,
+  }) {
+    this.activeTrayIcon = nativeImage.createFromPath(path.join(vitePublicDirectory, "tray_icon_active.png"))
+    this.inactiveTrayIcon = nativeImage.createFromPath(path.join(vitePublicDirectory, "tray_icon_inactive.png"))
 
     this.tray = new Tray(this.inactiveTrayIcon)
     this.updateIsActiveIndicator(false)
 
-    this.appState.getActive().subscribe(isActive => {
-      this.isActive = isActive
+    isActive.subscribe(isActive => {
+      this._isActive = isActive
       this.updateIsActiveIndicator(isActive)
     })
 
@@ -33,28 +34,28 @@ export class TrayIcon {
       if (executeSingleClickTimeout) {
         clearTimeout(executeSingleClickTimeout)
         executeSingleClickTimeout = undefined
-        this.updateIsActiveIndicator(this.isActive)
+        this.updateIsActiveIndicator(this._isActive)
       }
     }
     this.tray.on("double-click", () => {
       cancelSingleClick()
-      this.setWindowVisible(!this.isWindowVisible())
+      setWindowVisible(!isWindowVisible())
     })
     this.tray.on("click", () => {
       cancelSingleClick()
       // toggle isActive
-      this.updateIsActiveIndicator(!this.isActive)
+      this.updateIsActiveIndicator(!this._isActive)
       executeSingleClickTimeout = setTimeout(() => {
         clearTimeout(executeSingleClickTimeout)
-        this.appState.toggleActive()
+        toggleActive()
       }, 300)
     })
 
     // context menu
     const contextMenu = Menu.buildFromTemplate([
-      { label: "Open", type: "normal", click: () => this.setWindowVisible(true) },
-      { label: "Toggle", type: "normal", click: () => this.appState.toggleActive() },
-      { label: "Quit", type: "normal", click: () => this.quit() },
+      { label: "Open", type: "normal", click: () => setWindowVisible(true) },
+      { label: "Toggle", type: "normal", click: () => toggleActive() },
+      { label: "Quit", type: "normal", click: () => quit() },
     ])
     this.tray.setContextMenu(contextMenu)
   }

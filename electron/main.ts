@@ -1,66 +1,95 @@
 import { app, BrowserWindow, ipcMain } from "electron"
 import { fileURLToPath } from "node:url"
 import path from "node:path"
-import { AppState } from "./appState"
 import { TrayIcon } from "./trayIcon"
+import { PersistentState } from "./persistentState"
+import { first, map } from "rxjs"
+import { exists } from "./util"
+import fs from "node:fs/promises"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 process.env.APP_ROOT = path.join(__dirname, "..")
 
 export const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"]
+export const isDev = VITE_DEV_SERVER_URL !== undefined
 export const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron")
 export const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist")
 
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST
 
-const appState = new AppState()
+;(async () => {
 
-let window: BrowserWindow | null
-let shouldQuit = false
+  const userDataDir = isDev ? path.join(process.env.APP_ROOT, "dev-data") : app.getPath("userData")
+  if (!await exists(userDataDir)) {
+    await fs.mkdir(userDataDir, { recursive: true })
+  }
+  
+  const persistentState = new PersistentState(path.join(userDataDir, "data.json"))
 
-function createWindow() {
-  window = new BrowserWindow({
-    webPreferences: {
-      preload: path.join(__dirname, "preload.mjs"),
-    },
-  })
-
-  if (VITE_DEV_SERVER_URL) {
-    window.loadURL(VITE_DEV_SERVER_URL)
-  } else {
-    window.loadFile(path.join(RENDERER_DIST, "index.html"))
+  let window: BrowserWindow | null
+  let shouldQuit = false
+  const quit = async () => {
+    shouldQuit = true
+    await persistentState.forceWrite()
+    app.quit()
   }
 
-  window.on("close", (event) => {
-    if (!shouldQuit) {
-      event.preventDefault()
-      window?.hide()
+  function createWindow() {
+    window = new BrowserWindow({
+      webPreferences: {
+        preload: path.join(__dirname, "preload.mjs"),
+      },
+    })
+
+    if (isDev) {
+      window.loadURL(VITE_DEV_SERVER_URL!)
+    } else {
+      window.loadFile(path.join(RENDERER_DIST, "index.html"))
+    }
+
+    window.on("close", (event) => {
+      if (!shouldQuit) {
+        event.preventDefault()
+        window?.hide()
+      }
+    })
+  }
+
+  app.on("activate", () => {
+    // for macOS
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow()
     }
   })
-}
 
-app.on("activate", () => {
-  // for macOS
-  if (BrowserWindow.getAllWindows().length === 0) {
+  app.whenReady().then(() => {
     createWindow()
+    ipcMain.handle("test", ipcHandler.test)
+
+    new TrayIcon({
+      vitePublicDirectory: process.env.VITE_PUBLIC,
+      isActive: persistentState.getActiveStartTime().pipe(map(activeStartTime => activeStartTime !== null)),
+      toggleActive: () => {
+        persistentState.getActiveStartTime().pipe(first()).subscribe(activeStartTime => {
+          if (activeStartTime === null) {
+            persistentState.setActiveStartTime(new Date())
+          } else {
+            persistentState.setActiveStartTime(null)
+            persistentState.addTimeEntry(activeStartTime, new Date())
+          }
+        })
+      },
+      isWindowVisible: () => window?.isVisible() ?? false,
+      setWindowVisible: (visible) => visible ? window?.show() : window?.hide(),
+      quit,
+    })
+  })
+
+  const ipcHandler: IPC = {
+    test: async () => {
+      console.log("test")
+      return "test"
+    },
   }
-})
 
-app.whenReady().then(() => {
-  createWindow()
-  ipcMain.handle("test", ipcHandler.test)
-
-  new TrayIcon(
-    process.env.VITE_PUBLIC, appState,
-    () => window?.isVisible() ?? false,
-    (visible) => visible ? window?.show() : window?.hide(),
-    () => { shouldQuit = true; app.quit() },
-  )
-})
-
-const ipcHandler: IPC = {
-  test: async () => {
-    console.log("test")
-    return "test"
-  },
-}
+})()
