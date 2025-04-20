@@ -2,7 +2,7 @@ import { auditTime, BehaviorSubject, combineLatest, first, map, Observable, shar
 import { randomUUID } from "node:crypto"
 import { PathLike } from "node:fs"
 import fs from "node:fs/promises"
-import { exists } from "./util"
+import { exists, parseDateReviver } from "./util"
 import { State, TimeEntry } from "./types"
 
 export class PersistentState {
@@ -67,7 +67,7 @@ export class PersistentState {
     private async readStateFromFile() {
         if (await exists(this.persistentFile)) {
             const file = await fs.readFile(this.persistentFile, "utf-8")
-            return JSON.parse(file) as State
+            return JSON.parse(file, parseDateReviver) as State
         } else {
             const state = { activeStartTime: null, timeEntries: [] }
             await this.writeStateToFile(state)

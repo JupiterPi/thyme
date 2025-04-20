@@ -33,7 +33,7 @@ function Root() {
 
     <main className="p-5 flex flex-col items-center gap-5">
       <StateContext.Provider value={state}>
-        <Home startTime={new Date()} />
+        <Home />
       </StateContext.Provider>
     </main>
   </>

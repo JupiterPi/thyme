@@ -5,12 +5,18 @@ import classNames from "classnames"
 import { useContext } from "react"
 import { StateContext } from "./main"
 
-export function Home({ startTime }: { startTime: Date }) {
+export function Home() {
     const state = useContext(StateContext)
     const isActive = state.activeStartTime !== null
+    const activeStartTime = state.activeStartTime
+
+    console.log(activeStartTime)
+    console.log(typeof activeStartTime)
 
     const now = useCurrentTime()
-    const duration = isActive ? getDuration(startTime, now, true) : { hours: 0, minutes: 0, seconds: 0 }
+    const duration = isActive ? getDuration(activeStartTime!, now, true) : { hours: 0, minutes: 0, seconds: 0 }
+
+    const displayStartTime = isActive ? activeStartTime! : new Date()
 
     return <>
         <div className={classNames("w-20 h-20 rounded-xl bg-green-300 cursor-pointer", {"grayscale-100": !isActive})} onClick={() => window.ipc.toggleActive()}>
@@ -20,9 +26,9 @@ export function Home({ startTime }: { startTime: Date }) {
             <div className={classNames("rounded-xl p-3 border-1 bg-green-300 border-green-400", {"grayscale-100": !isActive})}>
                 <div className="text-green-800 font-medium">start time:</div>
                 <div className="font-mono font-bold text-green-900 text-3xl">
-                    {dateFormat(startTime, "HH")}
+                    {dateFormat(displayStartTime, "HH")}
                     <span className="text-green-600">:</span>
-                    {dateFormat(startTime, "MM")}
+                    {dateFormat(displayStartTime, "MM")}
                 </div>
                 <div className="h-2"></div>
                 <div className="text-green-800 font-medium">duration:</div>
