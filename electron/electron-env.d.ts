@@ -8,5 +8,7 @@ declare namespace NodeJS {
 }
 
 interface Window {
-  ipc: typeof import("./main").IPC,
+  ipc: typeof import("./main").PushIPC
 }
+
+type PullIPC = typeof import("./main").PullIPC

@@ -1,5 +1,9 @@
-export const ipcChannels = [
-    "test",
+export const ipcPushChannels = [
+    "toggleActive",
     "hide",
     "quit"
+] as const
+
+export const ipcPullChannels = [
+    "state"
 ] as const

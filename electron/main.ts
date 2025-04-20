@@ -3,9 +3,9 @@ import { fileURLToPath } from "node:url"
 import path from "node:path"
 import { TrayIcon } from "./trayIcon"
 import { PersistentState } from "./persistentState"
-import { first, map } from "rxjs"
+import { first, map, Observable } from "rxjs"
 import fs from "node:fs"
-import { ipcChannels } from "./ipcChannels"
+import { ipcPullChannels, ipcPushChannels } from "./ipcChannels"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 process.env.APP_ROOT = path.join(__dirname, "..")
@@ -69,35 +69,43 @@ app.whenReady().then(() => {
   createWindow()
 
   // setup IPC handlers
-  Object.getOwnPropertyNames(IPC).forEach((key) => {
-    ipcMain.handle(key, () => IPC[key as keyof typeof IPC]())
+  Object.keys(PushIPC).forEach((key) => {
+    ipcMain.handle(key, () => PushIPC[key as keyof typeof PushIPC]())
+  })
+  Object.keys(PullIPC).forEach((key) => {
+    PullIPC[key as keyof typeof PullIPC].subscribe(value => {
+      window?.webContents.send(key, value)
+    })
   })
 
   // tray icon
   new TrayIcon({
     vitePublicDirectory: process.env.VITE_PUBLIC,
     isActive: persistentState.getActiveStartTime().pipe(map(activeStartTime => activeStartTime !== null)),
-    toggleActive: () => {
-      persistentState.getActiveStartTime().pipe(first()).subscribe(activeStartTime => {
-        if (activeStartTime === null) {
-          persistentState.setActiveStartTime(new Date())
-        } else {
-          persistentState.setActiveStartTime(null)
-          persistentState.addTimeEntry(activeStartTime, new Date())
-        }
-      })
-    },
+    toggleActive: () => toggleActive(),
     isWindowVisible: () => window?.isVisible() ?? false,
     setWindowVisible: (visible) => visible ? window?.show() : window?.hide(),
     quit,
   })
 })
 
-export const IPC = {
-  test: async () => {
-    console.log("test")
-    return "test"
-  },
+function toggleActive() {
+  persistentState.getActiveStartTime().pipe(first()).subscribe(activeStartTime => {
+    if (activeStartTime === null) {
+      persistentState.setActiveStartTime(new Date())
+    } else {
+      persistentState.setActiveStartTime(null)
+      persistentState.addTimeEntry(activeStartTime, new Date())
+    }
+  })
+}
+
+export const PushIPC = {
+  toggleActive: () => toggleActive(),
   hide: () => window?.hide(),
   quit: () => quit(),
-} satisfies { [key in typeof ipcChannels[number]]: any }
+} satisfies { [key in typeof ipcPushChannels[number]]: () => any }
+
+export const PullIPC = {
+  state: persistentState.getState(),
+} satisfies { [key in typeof ipcPullChannels[number]]: Observable<any> }

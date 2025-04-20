@@ -1,19 +1,9 @@
-import { auditTime, BehaviorSubject, combineLatest, first, map, shareReplay, skip } from "rxjs"
-import { randomUUID, UUID } from "node:crypto"
+import { auditTime, BehaviorSubject, combineLatest, first, map, Observable, shareReplay, skip } from "rxjs"
+import { randomUUID } from "node:crypto"
 import { PathLike } from "node:fs"
 import fs from "node:fs/promises"
 import { exists } from "./util"
-
-export type TimeEntry = {
-    id: UUID,
-    startTime: Date,
-    endTime: Date,
-}
-
-type State = {
-    activeStartTime: Date | null,
-    timeEntries: TimeEntry[],
-}
+import { State, TimeEntry } from "./types"
 
 export class PersistentState {
     // state
@@ -54,12 +44,16 @@ export class PersistentState {
         })
     }
 
-    // persistence
-
     private state$ = combineLatest([this.activeStartTime$, this.timeEntries$]).pipe(
         map(([activeStartTime, timeEntries]) => ({ activeStartTime, timeEntries } satisfies State)),
         shareReplay(1) /* like BehaviorSubject */
-    )
+    ) as Observable<State>
+
+    public getState() {
+        return this.state$
+    }
+
+    // persistence
 
     constructor(private persistentFile: PathLike) {
         this.readStateFromFile().then(state => {

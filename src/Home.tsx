@@ -2,16 +2,18 @@ import dateFormat from "dateformat"
 import { getDuration, pad2, useCurrentTime } from "./util"
 import icon from "./assets/icon.svg"
 import classNames from "classnames"
-import { useState } from "react"
+import { useContext } from "react"
+import { StateContext } from "./main"
 
 export function Home({ startTime }: { startTime: Date }) {
+    const state = useContext(StateContext)
+    const isActive = state.activeStartTime !== null
+
     const now = useCurrentTime()
     const duration = getDuration(startTime, now)
 
-    const [isActive, setActive] = useState(false)
-
     return <>
-        <div className={classNames("w-20 h-20 rounded-xl bg-green-300 cursor-pointer", {"grayscale-100": !isActive})} onClick={() => setActive(!isActive)}>
+        <div className={classNames("w-20 h-20 rounded-xl bg-green-300 cursor-pointer", {"grayscale-100": !isActive})} onClick={() => window.ipc.toggleActive()}>
             <img src={icon} className="h-full p-2"></img>
         </div>
         <div className="flex gap-5">
