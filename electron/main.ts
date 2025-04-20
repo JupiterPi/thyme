@@ -72,9 +72,16 @@ app.whenReady().then(() => {
   Object.keys(PushIPC).forEach((key) => {
     ipcMain.handle(key, () => PushIPC[key as keyof typeof PushIPC]())
   })
-  Object.keys(PullIPC).forEach((key) => {
-    PullIPC[key as keyof typeof PullIPC].subscribe(value => {
-      window?.webContents.send(key, value)
+  Object.keys(PullIPC).forEach((channel) => {
+    let lastValue: any
+    PullIPC[channel as keyof typeof PullIPC].subscribe(value => {
+      lastValue = value
+      window?.webContents.send(("listen__" + channel), value)
+    })
+    ipcMain.handle(("startListening__" + channel), () => {
+      if (lastValue !== undefined) {
+        window?.webContents.send(("listen__" + channel), lastValue)
+      }
     })
   })
 

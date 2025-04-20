@@ -4,11 +4,13 @@ import { Observable } from "rxjs"
 
 let ipc = {}
 Object.keys(window.ipc).forEach((key) => {
-    if (key.startsWith("pull__")) {
-        ipc[key.slice("pull__".length)] = new Observable((subscriber) => {
-            window.ipc[key]((event, value) => {
+    if (key.startsWith("listen__")) {
+        const channel = key.slice("listen__".length)
+        ipc[channel] = new Observable((subscriber) => {
+            window.ipc[("listen__" + channel)]((event, value) => {
                 subscriber.next(value)
             })
+            window.ipc[("startListening__" + channel)]()
         })
     }
 })
