@@ -10,7 +10,7 @@ export function Home({ startTime }: { startTime: Date }) {
     const isActive = state.activeStartTime !== null
 
     const now = useCurrentTime()
-    const duration = getDuration(startTime, now)
+    const duration = isActive ? getDuration(startTime, now, true) : { hours: 0, minutes: 0, seconds: 0 }
 
     return <>
         <div className={classNames("w-20 h-20 rounded-xl bg-green-300 cursor-pointer", {"grayscale-100": !isActive})} onClick={() => window.ipc.toggleActive()}>
