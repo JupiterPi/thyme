@@ -38,6 +38,10 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, "preload.mjs"),
     },
+    width: 250,
+    height: 330,
+    resizable: isDev,
+    maximizable: false,
   })
 
   if (isDev) {
@@ -94,5 +98,6 @@ export const IPC = {
     console.log("test")
     return "test"
   },
+  hide: () => window?.hide(),
   quit: () => quit(),
 } satisfies { [key in typeof ipcChannels[number]]: any }

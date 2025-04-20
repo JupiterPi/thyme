@@ -1,9 +1,19 @@
 @import "tailwindcss";
 
 @theme {
-    --font-sans: "Inter", sans-serif;
+    --font-sans: "DM Sans", sans-serif;
+    --font-mono: "Space Mono", seif;
 }
 
 body {
     @apply bg-green-100 font-sans;
-    }
+    -webkit-user-select: none; /* Safari */        
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE10+/Edge */
+    user-select: none; /* Standard */
+}
+
+.draggable {
+    app-region: drag;
+    --webkit-app-region: drag;
+}
