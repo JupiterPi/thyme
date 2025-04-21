@@ -12,7 +12,7 @@ export function Dashboard() {
     const activeStartTime = state.activeStartTime
 
     const now = useCurrentTime()
-    const duration = isActive ? getDuration(activeStartTime!, now, true) : { hours: 0, minutes: 0, seconds: 0 }
+    const duration = isActive ? getDuration(activeStartTime!, now) : { hours: 0, minutes: 0, seconds: 0 }
 
     const displayStartTime = isActive ? activeStartTime! : new Date()
 
@@ -25,7 +25,7 @@ export function Dashboard() {
 
         {/* current timer */}
         <div className="flex gap-5">
-            <div className={classNames("rounded-xl p-3 border-1 bg-green-300 border-green-400", {"grayscale-100": !isActive})}>
+            <div className={classNames("_container", {"grayscale-100": !isActive})}>
                 <div className="text-green-800 font-medium">start time:</div>
                 <div className="font-mono font-bold text-green-900 text-3xl">
                     {dateFormat(displayStartTime, "HH")}
@@ -48,5 +48,3 @@ export function Dashboard() {
         
     </>
 }
-
-export default Dashboard

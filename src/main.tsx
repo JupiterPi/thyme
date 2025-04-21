@@ -3,9 +3,9 @@ import ReactDOM from "react-dom/client"
 import "./ipc"
 import "./index.css"
 import { Dashboard } from "./Dashboard"
+import { History } from "./History"
 import ipc from "./ipc"
 import { nullState, State } from "../electron/types"
-
 
 const pageId = window.location.hash.slice(1)
 
@@ -48,7 +48,7 @@ function Outlet() {
     case "":
       return <Dashboard />
     case "history":
-      return <div>history</div>
+      return <History />
     default:
       return <div>not found</div>
   }
