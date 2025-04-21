@@ -9,12 +9,12 @@ export class TrayIcon {
   
   private _isActive = false
 
-  constructor({ vitePublicDirectory, isActive, toggleActive, isWindowVisible, setWindowVisible, quit }: {
+  constructor({ vitePublicDirectory, isActive, toggleActive, toggleOpen, openDashboard, quit }: {
     vitePublicDirectory: string,
     isActive: Observable<boolean>,
     toggleActive: () => void,
-    isWindowVisible: () => boolean,
-    setWindowVisible: (visible: boolean) => void,
+    toggleOpen: () => void,
+    openDashboard: () => void,
     quit: () => void,
   }) {
     this.activeTrayIcon = nativeImage.createFromPath(path.join(vitePublicDirectory, "tray_icon_active.png"))
@@ -39,7 +39,7 @@ export class TrayIcon {
     }
     this.tray.on("double-click", () => {
       cancelSingleClick()
-      setWindowVisible(!isWindowVisible())
+      toggleOpen()
     })
     this.tray.on("click", () => {
       cancelSingleClick()
@@ -53,7 +53,7 @@ export class TrayIcon {
 
     // context menu
     const contextMenu = Menu.buildFromTemplate([
-      { label: "Open", type: "normal", click: () => setWindowVisible(true) },
+      { label: "Open", type: "normal", click: () => openDashboard() },
       { label: "Toggle", type: "normal", click: () => toggleActive() },
       { label: "Quit", type: "normal", click: () => quit() },
     ])

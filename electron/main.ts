@@ -6,8 +6,9 @@ import { PersistentState } from "./persistentState"
 import { first, map, Observable } from "rxjs"
 import fs from "node:fs"
 import { ipcPullChannels, ipcPushChannels } from "./ipcChannels"
+import { pages, WindowManager } from "./windowManager"
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+export const __dirname = path.dirname(fileURLToPath(import.meta.url))
 process.env.APP_ROOT = path.join(__dirname, "..")
 
 export const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"]
@@ -24,63 +25,31 @@ if (!fs.existsSync(userDataDir)) {
 
 const persistentState = new PersistentState(path.join(userDataDir, "data.json"))
 
-let window: BrowserWindow | null
-let shouldQuit = false
-const quit = async () => {
-  shouldQuit = true
-  await persistentState.forceWrite()
-  app.quit()
-}
-
-function createWindow() {
-  window = new BrowserWindow({
-    titleBarStyle: "hidden",
-    webPreferences: {
-      preload: path.join(__dirname, "preload.mjs"),
-    },
-    width: 250,
-    height: 330,
-    resizable: isDev,
-    maximizable: false,
-  })
-
-  if (isDev) {
-    window.loadURL(VITE_DEV_SERVER_URL!)
-  } else {
-    window.loadFile(path.join(RENDERER_DIST, "index.html"))
-  }
-
-  window.on("close", (event) => {
-    if (!shouldQuit) {
-      event.preventDefault()
-      window?.hide()
-    }
-  })
-}
+const windowManager = new WindowManager()
 
 app.on("activate", () => {
   // for macOS
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()
+    windowManager.openOrShowPage(pages.dashboard)
   }
 })
 
 app.whenReady().then(() => {
-  createWindow()
+  windowManager.openOrShowPage(pages.dashboard)
 
   // setup IPC handlers
   Object.keys(PushIPC).forEach((key) => {
-    ipcMain.handle(key, () => PushIPC[key as keyof typeof PushIPC]())
+    ipcMain.handle(key, (_: any, ...args: any[]) => (PushIPC[key as keyof typeof PushIPC] as (...args: any[]) => any)(...args))
   })
   Object.keys(PullIPC).forEach((channel) => {
     let lastValue: any
     PullIPC[channel as keyof typeof PullIPC].subscribe(value => {
       lastValue = value
-      window?.webContents.send(("listen__" + channel), value)
+      windowManager.sendAll(("listen__" + channel), value)
     })
     ipcMain.handle(("startListening__" + channel), () => {
       if (lastValue !== undefined) {
-        window?.webContents.send(("listen__" + channel), lastValue)
+        windowManager.sendAll(("listen__" + channel), lastValue)
       }
     })
   })
@@ -90,9 +59,17 @@ app.whenReady().then(() => {
     vitePublicDirectory: process.env.VITE_PUBLIC,
     isActive: persistentState.getActiveStartTime().pipe(map(activeStartTime => activeStartTime !== null)),
     toggleActive: () => toggleActive(),
-    isWindowVisible: () => window?.isVisible() ?? false,
-    setWindowVisible: (visible) => visible ? window?.show() : window?.hide(),
-    quit,
+    toggleOpen: () => {
+      const window = windowManager.findWindow(pages.dashboard)
+      if (window?.isVisible()) {
+        windowManager.hideAll()
+      } else {
+        windowManager.openOrShowPage(pages.dashboard)
+        windowManager.showAll()
+      }
+    },
+    openDashboard: () => windowManager.openOrShowPage(pages.dashboard),
+    quit: () => windowManager.closeAll(true),
   })
 })
 
@@ -109,9 +86,10 @@ function toggleActive() {
 
 export const PushIPC = {
   toggleActive: () => toggleActive(),
-  hide: () => window?.hide(),
-  quit: () => quit(),
-} satisfies { [key in typeof ipcPushChannels[number]]: () => any }
+  closeDashboard: () => windowManager.closeWindow(pages.dashboard),
+  openHistory: () => windowManager.openOrShowPage(pages.history),
+  closePage: (pageId: string) => windowManager.closeWindow(pageId),
+} satisfies { [key in typeof ipcPushChannels[number]]: (...args: any[]) => any }
 
 export const PullIPC = {
   state: persistentState.getState(),

@@ -12,7 +12,9 @@ Object.keys(window.ipc).forEach((key) => {
             })
             window.ipc[("startListening__" + channel)]()
         })
+    } else {
+        ipc[key] = window.ipc[key]
     }
 })
 
-export default ipc as PullIPC as const
+export default ipc as IPC as const

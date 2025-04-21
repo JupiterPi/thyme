@@ -4,14 +4,12 @@ import icon from "./assets/icon.svg"
 import classNames from "classnames"
 import { useContext } from "react"
 import { StateContext } from "./main"
+import ipc from "./ipc"
 
-export function Home() {
+export function Dashboard() {
     const state = useContext(StateContext)
     const isActive = state.activeStartTime !== null
     const activeStartTime = state.activeStartTime
-
-    console.log(activeStartTime)
-    console.log(typeof activeStartTime)
 
     const now = useCurrentTime()
     const duration = isActive ? getDuration(activeStartTime!, now, true) : { hours: 0, minutes: 0, seconds: 0 }
@@ -19,9 +17,13 @@ export function Home() {
     const displayStartTime = isActive ? activeStartTime! : new Date()
 
     return <>
-        <div className={classNames("w-20 h-20 rounded-xl bg-green-300 cursor-pointer", {"grayscale-100": !isActive})} onClick={() => window.ipc.toggleActive()}>
+
+        {/* icon */}
+        <div className={classNames("w-20 h-20 rounded-xl bg-green-300 cursor-pointer", {"grayscale-100": !isActive})} onClick={() => ipc.toggleActive()}>
             <img src={icon} className="h-full p-2"></img>
         </div>
+
+        {/* current timer */}
         <div className="flex gap-5">
             <div className={classNames("rounded-xl p-3 border-1 bg-green-300 border-green-400", {"grayscale-100": !isActive})}>
                 <div className="text-green-800 font-medium">start time:</div>
@@ -41,8 +43,10 @@ export function Home() {
                 </div>
             </div>
         </div>
+
+        <div className="_button" onClick={() => ipc.openHistory()}>history</div>
         
     </>
 }
 
-export default Home
+export default Dashboard
