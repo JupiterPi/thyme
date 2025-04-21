@@ -23,3 +23,21 @@ body {
 ._button {
     @apply bg-green-300 py-0.5 px-1.5 rounded-lg font-medium border-1 border-green-600 cursor-pointer transition-[background] duration-100 hover:bg-green-400;
 }
+/* scrollbar */
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--color-green-200);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--color-green-500);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-green-600);
+}

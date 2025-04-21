@@ -1,6 +1,6 @@
 export const ipcPushChannels = [
     "toggleActive",
-    "closeDashboard",
+    "updateTimeEntry",
     "openHistory",
     "closePage"
 ] as const

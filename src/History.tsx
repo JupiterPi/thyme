@@ -4,6 +4,7 @@ import dateFormat from "dateformat"
 import { TimeEntry } from "../electron/types"
 import { getDuration, pad2 } from "./util"
 import classNames from "classnames"
+import ipc from "./ipc"
 
 export function History() {
     const state = useContext(StateContext)
@@ -11,14 +12,13 @@ export function History() {
     const [expandedId, setExpandedId] = useState<string | null>(state.timeEntries[0]?.id ?? null)
     
     return <>
-        <div className="text-green-700 font-semibold text-xl">History:</div>
         <div className="flex flex-col w-full gap-2 items-center">
             {state.timeEntries.map(entry => {
                 return entry.id === expandedId
-                    ? <TimeEntryExpanded key={entry.id} timeEntry={entry} updateTimeEntry={timeEntry => alert("update:" + JSON.stringify(timeEntry))} />
+                    ? <TimeEntryExpanded key={entry.id} timeEntry={entry} />
                     : <TimeEntryCollapsed key={entry.id} timeEntry={entry} onExpand={() => setExpandedId(entry.id)} />
             })}
-            {state.timeEntries.length === 0 && <div className="text-green-700 mt-[-5px]">No entries</div>}
+            {state.timeEntries.length === 0 && <div className="text-green-700">No entries</div>}
         </div>
     </>
 }
@@ -34,7 +34,7 @@ function TimeEntryCollapsed({ timeEntry, onExpand }: { timeEntry: TimeEntry, onE
     )
 }
 
-function TimeEntryExpanded({ timeEntry, updateTimeEntry }: { timeEntry: TimeEntry, updateTimeEntry: (entry: TimeEntry) => void }) {
+function TimeEntryExpanded({ timeEntry }: { timeEntry: TimeEntry }) {
     const [startTime, setStartTime] = useState(timeEntry.startTime)
     const [endTime, setEndTime] = useState(timeEntry.endTime)
 
@@ -42,13 +42,15 @@ function TimeEntryExpanded({ timeEntry, updateTimeEntry }: { timeEntry: TimeEntr
 
     const editField = (delta: number) => {
         if (editingField === "start") {
-            setStartTime(new Date(startTime.getTime() + delta * 60 * 1000))
+            const newStartTime = startTime.getTime() + delta * 60 * 1000
+            setStartTime(new Date(Math.min(newStartTime, endTime.getTime())))
         } else if (editingField === "end") {
-            setEndTime(new Date(endTime.getTime() + delta * 60 * 1000))
+            const newEndTime = endTime.getTime() + delta * 60 * 1000
+            setEndTime(new Date(Math.max(newEndTime, startTime.getTime())))
         }
     }
     const saveChanges = () => {
-        updateTimeEntry({ ...timeEntry, startTime: startTime, endTime: endTime })
+        ipc.updateTimeEntry({ ...timeEntry, startTime: startTime, endTime: endTime })
         setEditingField(null)
     }
 
@@ -62,9 +64,9 @@ function TimeEntryExpanded({ timeEntry, updateTimeEntry }: { timeEntry: TimeEntr
                     {label: "duration", editable: false, hoursStr: pad2(duration.hours), minutesStr: pad2(duration.minutes)},
                     {label: "end", editable: editingField === null, hoursStr: dateFormat(endTime, "HH"), minutesStr: dateFormat(endTime, "MM")},
                 ].map(clock => (
-                    <div className="flex flex-col items-center">
+                    <div key={clock.label} className="flex flex-col items-center">
                         <div className="text-green-600 font-medium text-sm">{clock.label}</div>
-                        <div className={classNames("bg-green-300 px-2 rounded-lg group outline-1 outline-transparent", {"hover:outline-green-600 transition-[outline-color] duration-300ms cursor-pointer": clock.editable, "outline-green-600!": editingField === clock.label})} onClick={() => setEditingField(clock.label as "start" | "end")}>
+                        <div className={classNames("bg-green-300 px-2 rounded-lg group outline-1 outline-transparent", {"hover:outline-green-600 transition-[outline-color] duration-300ms cursor-pointer": clock.editable, "outline-green-600!": editingField === clock.label})} onClick={() => clock.label !== "duration" && setEditingField(clock.label as "start" | "end")}>
                             <div className={classNames("font-mono font-bold text-green-900 text-2xl", {"group-hover:animate-[pulse_1s_ease-in-out_infinite]": clock.editable})}>
                                 {clock.hoursStr}
                                 <span className="text-green-600">:</span>
@@ -77,7 +79,7 @@ function TimeEntryExpanded({ timeEntry, updateTimeEntry }: { timeEntry: TimeEntr
             {editingField !== null && (
                 <div className="_container bg-green-200! w-fit p-1! flex items-center gap-1">
                     {[-60, -20, -5, -1, +1, +5, +20, +60].map(delta => (
-                        <div className="_button font-mono text-sm" onClick={() => editField(delta)}>{delta === -60 ? "-1h" : delta === +60 ? "+1h" : (delta > 0 ? `+${delta}` : delta)}</div>
+                        <div key={delta} className="_button font-mono text-sm" onClick={() => editField(delta)}>{delta === -60 ? "-1h" : delta === +60 ? "+1h" : (delta > 0 ? `+${delta}` : delta)}</div>
                     ))}
                     <div className="w-1"></div>
                     <div className="_button font-mono text-sm" onClick={() => saveChanges()}>OK</div>
