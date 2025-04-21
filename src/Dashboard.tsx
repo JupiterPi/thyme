@@ -44,7 +44,7 @@ export function Dashboard() {
             </div>
         </div>
 
-        <div className="_button" onClick={() => ipc.openHistory()}>history</div>
+        <div className="_button" onClick={() => ipc.openHistory()}>History</div>
         
     </>
 }

@@ -5,7 +5,7 @@ import { __dirname, isDev, RENDERER_DIST, VITE_DEV_SERVER_URL } from "./main"
 export type Page = { id: string, width: number, height: number }
 export const pages: Record<string, Page> = {
   dashboard: { id: "", width: 250, height: 375 },
-  history: { id: "history", width: 500, height: 500 },
+  history: { id: "history", width: 460, height: 500 },
 }
 
 export class WindowManager {
