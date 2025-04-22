@@ -5,7 +5,7 @@ import { __dirname, isDev, RENDERER_DIST, VITE_DEV_SERVER_URL } from "./main"
 export type Page = { id: string, width: number, height: number }
 export const pages: Record<string, Page> = {
   dashboard: { id: "", width: 250, height: 375 },
-  history: { id: "history", width: 460, height: 500 },
+  history: { id: "history", width: 460, height: 600 },
 }
 
 export class WindowManager {
@@ -26,7 +26,7 @@ export class WindowManager {
             },
             width: page.width,
             height: page.height,
-            resizable: true,
+            resizable: isDev,
             maximizable: false,
         })
         this.windows.push({ page, window })

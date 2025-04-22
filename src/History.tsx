@@ -10,13 +10,22 @@ export function History() {
     const state = useContext(StateContext)
 
     const [expandedId, setExpandedId] = useState<string | null>(state.timeEntries[0]?.id ?? null)
+
+    const formatOnlyDate = (date: Date) => `${dateFormat(date, "DDDD") /* (e.g. "today") */}, ${date.toLocaleDateString()}`
+    const timeEntriesGrouped = Object.values(Object.groupBy(state.timeEntries.slice().reverse(), ({startTime}) => formatOnlyDate(startTime))) as TimeEntry[][]
     
     return <>
         <div className="flex flex-col w-full gap-2 items-center">
-            {state.timeEntries.map(entry => {
-                return entry.id === expandedId
-                    ? <TimeEntryExpanded key={entry.id} timeEntry={entry} />
-                    : <TimeEntryCollapsed key={entry.id} timeEntry={entry} onExpand={() => setExpandedId(entry.id)} />
+            {timeEntriesGrouped.length > 0 && <div className="-mb-5"></div>}
+            {timeEntriesGrouped.map(entries => {
+                return <>
+                    <div className="text-green-700 mt-5">{formatOnlyDate(entries[0]!.startTime)}</div>
+                    {entries.map(entry => {
+                        return entry.id === expandedId
+                        ? <TimeEntryExpanded key={entry.id} timeEntry={entry} />
+                        : <TimeEntryCollapsed key={entry.id} timeEntry={entry} onExpand={() => setExpandedId(entry.id)} />
+                    })}
+                </>
             })}
             {state.timeEntries.length === 0 && <div className="text-green-700">No entries</div>}
         </div>
