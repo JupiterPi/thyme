@@ -7,6 +7,7 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
+    injectBuildInfo(),
     react(),
     electron({
       main: {
@@ -29,3 +30,15 @@ export default defineConfig({
     tailwindcss(),
   ],
 })
+
+function injectBuildInfo() {
+  return {
+    name: "inject-build-info",
+    transform(src: string, id: string) {
+      if (id.endsWith("buildInfo.ts")) {
+        return src.replace("{{INJECT: VERSION}}", process.env.THYME_VERSION ?? "(unknown version)")
+      }
+      return src
+    }
+  }
+}

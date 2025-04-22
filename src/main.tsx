@@ -7,6 +7,7 @@ import { History } from "./History"
 import ipc from "./ipc"
 import { nullState, State } from "../electron/types"
 import logo from "./assets/icon.svg"
+import { version } from "./buildInfo"
 
 const pageId = window.location.hash.slice(1)
 
@@ -34,7 +35,7 @@ function Root() {
         <div className="w-4"></div>
         <div className="flex-1 flex justify-center items-center text-sm">
           <img src={logo} className="size-4 bg-white rounded-full p-[1.5px] flex justify-center items-center mr-1" />
-          {pageId === "" ? "Thyme" : pageId === "history" ? "History" : "(Thyme)"}
+          {pageId === "" ? `Thyme ${version}` : pageId === "history" ? "History" : "(Thyme)"}
         </div>
       </div>
       <div className="text-[10px] text-green-600 bg-green-500 hover:bg-red-400 hover:text-red-600 size-4 rounded-full flex justify-center items-center mr-1.5" onClick={() => ipc.closePage(pageId)}>&#10006;</div>
