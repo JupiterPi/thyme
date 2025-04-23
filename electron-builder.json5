@@ -1,7 +1,7 @@
 // @see - https://www.electron.build/configuration/configuration
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "YourAppID",
+  "appId": "de.jupiterpi.thyme",
   "asar": true,
   "productName": "Thyme",
   "directories": {
@@ -15,7 +15,7 @@
     "target": [
       "dmg"
     ],
-    "artifactName": "${productName}-Mac-${version}-Installer.${ext}"
+    "artifactName": "thyme-${version}-macos.${ext}"
   },
   "win": {
     "target": [
@@ -26,7 +26,8 @@
         ]
       }
     ],
-    "artifactName": "${productName}-Windows-${version}-Setup.${ext}"
+    "artifactName": "thyme-${version}-win.${ext}",
+    "publish": ["github"],
   },
   "nsis": {
     "oneClick": false,
@@ -38,6 +39,6 @@
     "target": [
       "AppImage"
     ],
-    "artifactName": "${productName}-Linux-${version}.${ext}"
+    "artifactName": "thyme-${version}-linux.${ext}"
   }
 }

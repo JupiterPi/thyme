@@ -1,0 +1,25 @@
+name: Publish tags
+
+on:
+  push: 
+    branches:
+      - main
+
+jobs:
+  build-and-publish-binaries:
+    name: Build binaries (${{ matrix.os }})
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".node-version"
+      - run: npm ci
+      - run: npm run build
