@@ -9,7 +9,8 @@ import { nullState, State } from "../electron/types"
 import logo from "./assets/icon.svg"
 import { version } from "./buildInfo"
 
-const pageId = window.location.hash.slice(1)
+const pageId = window.location.search.startsWith("?pageId=") ? window.location.search.slice("?pageId=".length) : ""
+console.log("pageId", pageId)
 
 export const StateContext = React.createContext<State>(nullState)
 
@@ -53,8 +54,7 @@ function Root() {
 }
 
 function Outlet() {
-  const route = window.location.hash.slice(1)
-  switch (route) {
+  switch (pageId) {
     case "":
       return <Dashboard />
     case "history":

@@ -1,6 +1,7 @@
 import path from "path"
 import { BrowserWindow } from "electron"
 import { __dirname, isDev, RENDERER_DIST, VITE_DEV_SERVER_URL } from "./main"
+import url from "url"
 
 export type Page = { id: string, width: number, height: number }
 export const pages: Record<string, Page> = {
@@ -31,10 +32,11 @@ export class WindowManager {
         })
         this.windows.push({ page, window })
 
+        const pageQueryStr = page.id === "" ? "" : `?pageId=${page.id}`
         if (isDev) {
-            window.loadURL(VITE_DEV_SERVER_URL! + "#" + page.id)
+            window.loadURL(VITE_DEV_SERVER_URL! + pageQueryStr)
         } else {
-            window.loadFile(path.join(RENDERER_DIST, "index.html") + "#" + page.id)
+            window.loadFile(url.pathToFileURL(path.join(RENDERER_DIST, "index.html")) + pageQueryStr)
         }
     
         window.on("close", (event) => {
