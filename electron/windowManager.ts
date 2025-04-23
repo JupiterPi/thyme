@@ -36,7 +36,7 @@ export class WindowManager {
         if (isDev) {
             window.loadURL(VITE_DEV_SERVER_URL! + pageQueryStr)
         } else {
-            window.loadFile(url.pathToFileURL(path.join(RENDERER_DIST, "index.html")) + pageQueryStr)
+            window.loadURL(url.pathToFileURL(path.join(RENDERER_DIST, "index.html")) + pageQueryStr)
         }
     
         window.on("close", (event) => {

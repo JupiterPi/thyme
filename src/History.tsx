@@ -15,11 +15,10 @@ export function History() {
     const timeEntriesGrouped = Object.values(Object.groupBy(state.timeEntries.slice().reverse(), ({startTime}) => formatOnlyDate(startTime))) as TimeEntry[][]
     
     return <>
-        <div className="flex flex-col w-full gap-2 items-center">
-            {timeEntriesGrouped.length > 0 && <div className="-mb-5"></div>}
+        <div className="flex flex-col w-full gap-6 items-center">
             {timeEntriesGrouped.map(entries => {
-                return <>
-                    <div className="text-green-700 mt-5">{formatOnlyDate(entries[0]!.startTime)}</div>
+                return <div className="flex flex-col gap-2 w-full items-center" key={entries[0]!.startTime.toLocaleDateString()}>
+                    <div className="text-green-700">{formatOnlyDate(entries[0]!.startTime)}</div>
                     {entries.map((_, i) => {
                         const entry = entries[i]
                         const previousEntry: TimeEntry | undefined = entries[i + 1]
@@ -28,7 +27,7 @@ export function History() {
                         ? <TimeEntryExpanded key={entry.id} timeEntry={entry} previousEntry={previousEntry} nextEntry={nextEntry} />
                         : <TimeEntryCollapsed key={entry.id} timeEntry={entry} onExpand={() => setExpandedId(entry.id)} />
                     })}
-                </>
+                </div>
             })}
             {state.timeEntries.length === 0 && <div className="text-green-700">No entries</div>}
         </div>
