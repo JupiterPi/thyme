@@ -17,29 +17,31 @@ export function History() {
     const [confirmingDeleteAll, setConfirmingDeleteAll] = useEphemeralState(false, 2000)
     
     return <>
-        <div className="flex flex-col w-full gap-6 items-center">
-            {timeEntriesGrouped.map(entries => {
-                return <div className="flex flex-col gap-2 w-full items-center" key={entries[0]!.startTime.toLocaleDateString()}>
-                    <div className="text-green-700">{formatOnlyDate(entries[0]!.startTime)}</div>
-                    {entries.map((_, i) => {
-                        const entry = entries[i]
-                        const previousEntry: TimeEntry | undefined = entries[i + 1]
-                        const nextEntry: TimeEntry | undefined = entries[i - 1]
-                        return entry.id === expandedId
-                        ? <TimeEntryExpanded key={entry.id} timeEntry={entry} previousEntry={previousEntry} nextEntry={nextEntry} />
-                        : <TimeEntryCollapsed key={entry.id} timeEntry={entry} onExpand={() => setExpandedId(entry.id)} />
-                    })}
-                </div>
-            })}
-            {state.timeEntries.length === 0 && <div className="text-green-700">No entries</div>}
-            {state.timeEntries.length > 0 && <div className="_button text-sm" onClick={() => {
-                if (confirmingDeleteAll) {
-                    ipc.deleteAllTimeEntries()
-                    setConfirmingDeleteAll(false)
-                } else {
-                    setConfirmingDeleteAll(true)
-                }
-            }}>{confirmingDeleteAll ? "confirm" : "delete all"}</div>}
+        <div className="flex justify-center">
+            <div className="flex flex-col w-full gap-6 items-center" onMouseLeave={() => setExpandedId(null)}>
+                {timeEntriesGrouped.map(entries => {
+                    return <div className="flex flex-col gap-2 w-full items-center" key={entries[0]!.startTime.toLocaleDateString()}>
+                        <div className="text-green-700">{formatOnlyDate(entries[0]!.startTime)}</div>
+                        {entries.map((_, i) => {
+                            const entry = entries[i]
+                            const previousEntry: TimeEntry | undefined = entries[i + 1]
+                            const nextEntry: TimeEntry | undefined = entries[i - 1]
+                            return entry.id === expandedId
+                            ? <TimeEntryExpanded key={entry.id} timeEntry={entry} previousEntry={previousEntry} nextEntry={nextEntry} />
+                            : <TimeEntryCollapsed key={entry.id} timeEntry={entry} onExpand={() => setExpandedId(entry.id)} />
+                        })}
+                    </div>
+                })}
+                {state.timeEntries.length === 0 && <div className="text-green-700">No entries</div>}
+                {state.timeEntries.length > 0 && <div className="_button text-sm" onClick={() => {
+                    if (confirmingDeleteAll) {
+                        ipc.deleteAllTimeEntries()
+                        setConfirmingDeleteAll(false)
+                    } else {
+                        setConfirmingDeleteAll(true)
+                    }
+                }}>{confirmingDeleteAll ? "confirm" : "delete all"}</div>}
+            </div>
         </div>
     </>
 }
@@ -47,7 +49,7 @@ export function History() {
 function TimeEntryCollapsed({ timeEntry, onExpand }: { timeEntry: TimeEntry, onExpand: () => void }) {
     const duration = getDuration(timeEntry.startTime, timeEntry.endTime)
     return (
-        <div className="_container bg-green-200! hover:border-green-800! transition-[border] cursor-pointer w-fit p-1.5! flex items-center gap-3" onClick={onExpand}>
+        <div className="_container bg-green-200! hover:border-green-800! transition-[border] cursor-pointer w-fit p-1.5! flex items-center gap-3" onMouseEnter={onExpand}>
             <div className="bg-green-300 px-1.5 rounded-lg font-mono">{dateFormat(timeEntry.startTime, "HH:MM")}</div>
             <div className="bg-green-300 px-1.5 rounded-lg font-mono">{pad2(duration.hours)}:{pad2(duration.minutes)}h</div>
             <div className="bg-green-300 px-1.5 rounded-lg font-mono">{dateFormat(timeEntry.endTime, "HH:MM") === "00:00" ? "24:00" : dateFormat(timeEntry.endTime, "HH:MM")}</div>
