@@ -19,14 +19,14 @@ jobs:
           files: "package.json"
           search-text: "\"version\": \"0.0.0\""
           replacement-text: "\"version\": \"${{ github.event.release.tag_name }}\""
-      - name: Export version as environment variable
-        run: export THYME_VERSION=${{ github.event.release.tag_name }}
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "22"
       - run: npm ci
       - run: npm run build
+        env: 
+          THYME_VERSION: ${{ github.event.release.tag_name }}
       - name: Attach binaries to release
         uses: softprops/action-gh-release@v2
         with:
