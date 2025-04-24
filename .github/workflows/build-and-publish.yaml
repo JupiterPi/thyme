@@ -1,25 +1,31 @@
-name: Publish tags
+name: Build and publish binaries
 
 on:
-  push: 
-    branches:
-      - main
+  release:
+    types: [published]
 
 jobs:
   build-and-publish-binaries:
-    name: Build binaries (${{ matrix.os }})
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+    name: Build and publish binaries (win)
+    runs-on: windows-latest
     permissions:
       contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Inject version
+        uses: richardrigutins/replace-in-files@v2
+        with:
+          files: "package.json"
+          search-text: "\"version\": \"0.0.0\""
+          replacement-text: "\"version\": \"${{ github.event.release.tag_name }}\""
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "22"
       - run: npm ci
       - run: npm run build
+      - name: Attach binaries to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/thyme-*-win-setup.exe

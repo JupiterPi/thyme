@@ -2,7 +2,7 @@
   "name": "thyme",
   "repository": "github:JupiterPi/thyme",
   "private": true,
-  "version": "v0.0.1",
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -15,7 +15,7 @@
     "target": [
       "dmg"
     ],
-    "artifactName": "thyme-${version}-macos.${ext}"
+    "artifactName": "thyme-${version}-macos-setup.${ext}"
   },
   "win": {
     "target": [
@@ -26,7 +26,7 @@
         ]
       }
     ],
-    "artifactName": "thyme-${version}-win.${ext}",
+    "artifactName": "thyme-${version}-win-setup.${ext}",
     "publish": ["github"],
   },
   "nsis": {
