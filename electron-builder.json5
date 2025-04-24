@@ -27,7 +27,6 @@
       }
     ],
     "artifactName": "thyme-${version}-win-setup.${ext}",
-    "publish": ["github"],
   },
   "nsis": {
     "oneClick": false,
