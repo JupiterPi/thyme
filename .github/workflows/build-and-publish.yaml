@@ -28,4 +28,4 @@ jobs:
       - name: Attach binaries to release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/thyme-*-win-setup.exe
+          files: release/*/thyme-*-win-setup.exe
