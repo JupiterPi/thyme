@@ -2,7 +2,7 @@ import { useContext, useState } from "react"
 import { StateContext } from "./main"
 import dateFormat from "dateformat"
 import { TimeEntry } from "../electron/types"
-import { getDuration, pad2 } from "./util"
+import { getDuration, pad2, useEphemeralState } from "./util"
 import classNames from "classnames"
 import ipc from "./ipc"
 
@@ -13,6 +13,8 @@ export function History() {
 
     const formatOnlyDate = (date: Date) => `${dateFormat(date, "DDDD") /* (e.g. "today") */}, ${date.toLocaleDateString()}`
     const timeEntriesGrouped = Object.values(Object.groupBy(state.timeEntries.slice().reverse(), ({startTime}) => formatOnlyDate(startTime))) as TimeEntry[][]
+
+    const [confirmingDeleteAll, setConfirmingDeleteAll] = useEphemeralState(false, 2000)
     
     return <>
         <div className="flex flex-col w-full gap-6 items-center">
@@ -30,6 +32,14 @@ export function History() {
                 </div>
             })}
             {state.timeEntries.length === 0 && <div className="text-green-700">No entries</div>}
+            {state.timeEntries.length > 0 && <div className="_button text-sm" onClick={() => {
+                if (confirmingDeleteAll) {
+                    ipc.deleteAllTimeEntries()
+                    setConfirmingDeleteAll(false)
+                } else {
+                    setConfirmingDeleteAll(true)
+                }
+            }}>{confirmingDeleteAll ? "confirm" : "delete all"}</div>}
         </div>
     </>
 }
@@ -98,6 +108,10 @@ function TimeEntryExpanded({ timeEntry, previousEntry, nextEntry }: { timeEntry:
                         </div>
                     </div>
                 ))}
+            </div>
+            <div className="_container bg-green-200! w-fit p-1! flex items-center gap-2 border-t-transparent! rounded-t-[0]!">
+                <div className="_button text-sm">insert pause</div>
+                <div className="_button text-sm" onClick={() => ipc.deleteTimeEntry(timeEntry.id)}>delete</div>
             </div>
             {editingField !== null && (
                 <div className="_container bg-green-200! w-fit p-1! flex items-center gap-1">

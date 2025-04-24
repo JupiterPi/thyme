@@ -44,6 +44,23 @@ export class PersistentState {
         })
     }
 
+    public deleteTimeEntry(id: string) {
+        return new Promise<void>(resolve => {
+            this.timeEntries$.pipe(first()).subscribe(timeEntries => {
+                const updatedEntries = timeEntries.filter(timeEntry => timeEntry.id !== id)
+                this.timeEntries$.next(updatedEntries)
+                resolve()
+            })
+        })
+    }
+
+    public deleteAllTimeEntries() {
+        return new Promise<void>(resolve => {
+            this.timeEntries$.next([])
+            resolve()
+        })
+    }
+
     private state$ = combineLatest([this.activeStartTime$, this.timeEntries$]).pipe(
         map(([activeStartTime, timeEntries]) => ({ activeStartTime, timeEntries } satisfies State)),
         shareReplay(1) /* like BehaviorSubject */
