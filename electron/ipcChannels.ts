@@ -3,7 +3,7 @@ export const ipcPushChannels = [
     "reduceTimeEntries",
     "deleteAllTimeEntries",
     "loadMockData",
-    "openHistory",
+    "openPage",
     "closePage"
 ] as const
 

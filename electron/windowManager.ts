@@ -1,5 +1,5 @@
 import path from "path"
-import { BrowserWindow } from "electron"
+import { BrowserWindow, shell } from "electron"
 import { __dirname, isDev, RENDERER_DIST, VITE_DEV_SERVER_URL } from "./main"
 import url from "url"
 
@@ -7,6 +7,7 @@ export type Page = { id: string, width: number, height: number }
 export const pages: Record<string, Page> = {
   dashboard: { id: "", width: 250, height: 375 },
   history: { id: "history", width: 460, height: 600 },
+  settings: { id: "settings", width: 300, height: 350 },
 }
 
 export class WindowManager {
@@ -44,6 +45,11 @@ export class WindowManager {
                 event.preventDefault()
                 window?.hide()
             }
+        })
+
+        window.webContents.setWindowOpenHandler((details) => {
+            shell.openExternal(details.url)
+            return { action: "deny" }
         })
     }
 

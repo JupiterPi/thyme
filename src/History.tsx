@@ -57,7 +57,7 @@ export function History() {
                         setConfirmingDeleteAll(true)
                     }
                 }}>{confirmingDeleteAll ? "confirm" : "delete all"}</div>}
-                {isDev && <div className="_button text-sm -mt-5" onClick={() => ipc.loadMockData()}>load mock data</div>}
+                {isDev && <div className="_button text-sm -mt-5" onClick={() => ipc.loadMockData()}>load mock data (dev)</div>}
             </div>
         </div>
     </>

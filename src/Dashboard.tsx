@@ -5,6 +5,8 @@ import classNames from "classnames"
 import { useContext, useEffect, useState } from "react"
 import { StateContext } from "./main"
 import ipc from "./ipc"
+import { getLatestVersion } from "./updates"
+import { version } from "./buildInfo"
 
 export function Dashboard() {
     const state = useContext(StateContext)
@@ -24,6 +26,13 @@ export function Dashboard() {
     const duration = isActive
         ? { hours: Math.floor(durationSeconds / (60*60)), minutes: Math.floor((durationSeconds % (60*60)) / 60), seconds: durationSeconds % 60 }
         : { hours: 0, minutes: 0, seconds: 0 }
+    
+    const [isUpdateAvailable, setIsUpdateAvailable] = useState(false)
+    useEffect(() => {
+        getLatestVersion().then(latestVersion => {
+            setIsUpdateAvailable(latestVersion !== version)
+        })
+    }, [])
 
     return <>
 
@@ -53,7 +62,15 @@ export function Dashboard() {
             </div>
         </div>
 
-        <div className="_button" onClick={() => ipc.openHistory()}>History</div>
+        {/* navigation buttons */}
+        <div className="flex gap-2">
+            <button className="_button" onClick={() => ipc.openPage("history")}>History</button>
+            <button className="_button" onClick={() => ipc.openPage("settings")}>
+                About
+                {isUpdateAvailable && <div className="bg-red-400 size-[10px] rounded-full absolute translate-y-[-30px] translate-x-[48px] animate-[ping_1432ms_infinite]"></div>}
+                {isUpdateAvailable && <div className="bg-red-400 size-[10px] rounded-full absolute translate-y-[-30px] translate-x-[48px]"></div>}
+            </button>
+        </div>
         
     </>
 }

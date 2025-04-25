@@ -90,7 +90,7 @@ export const PushIPC = {
   reduceTimeEntries: (...actions: TimeEntriesAction[]) => persistentState.reduceTimeEntries(actions),
   deleteAllTimeEntries: () => persistentState.deleteAllTimeEntries(),
   loadMockData: () => persistentState.loadMockData(),
-  openHistory: () => windowManager.openOrShowPage(pages.history),
+  openPage: (page: "history" | "settings") => windowManager.openOrShowPage(pages[page]),
   closePage: (pageId: string) => windowManager.closeWindow(pageId),
 } satisfies { [key in typeof ipcPushChannels[number]]: (...args: any[]) => any }
 
