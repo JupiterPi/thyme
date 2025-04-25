@@ -37,9 +37,10 @@ jobs:
             const fs = require("fs");
             const path = require("path");
             const version = "${{ github.event.release.tag_name }}";
+            const versionWithoutV = version.includes("v") ? version.slice(1) : version;
             fs.mkdirSync("./releaseBinaries");
-            if (${{ matrix.os == 'windows-latest'}}) fs.renameSync(`release/thyme-${version.slice(1)}-win-setup.exe`, `releaseBinaries/thyme-${version}-win-setup.exe`);
-            if (${{ matrix.os == 'ubuntu-latest'}}) fs.renameSync(`release/thyme-${version.slice(1)}-linux.AppImage`, `releaseBinaries/thyme-${version}-linux.AppImage`);
+            if (${{ matrix.os == 'windows-latest'}}) fs.renameSync(`release/${versionWithoutV}/thyme-${versionWithoutV}-win-setup.exe`, `releaseBinaries/thyme-${version}-win-setup.exe`);
+            if (${{ matrix.os == 'ubuntu-latest'}}) fs.renameSync(`release/${versionWithoutV}/thyme-${versionWithoutV}-linux.AppImage`, `releaseBinaries/thyme-${version}-linux.AppImage`);
       - name: Attach binaries to release
         uses: softprops/action-gh-release@v2
         with:
