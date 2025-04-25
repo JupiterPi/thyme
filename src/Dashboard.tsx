@@ -13,7 +13,8 @@ export function Dashboard() {
 
     const [durationSeconds, setDurationSeconds] = useState(0)
     useEffect(() => {
-        setDurationSeconds(Math.floor((new Date().getTime() - (activeStartTime?.getTime() ?? 0)) / 1000))
+        const currentDuration = Math.floor((new Date().getTime() - (activeStartTime?.getTime() ?? 0)) / 1000)
+        setDurationSeconds(currentDuration === 0 ? 1 : currentDuration)
         const interval = setInterval(() => {
             setDurationSeconds(d => d + 1)
         }, 1000)
