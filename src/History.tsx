@@ -5,6 +5,7 @@ import { mergeThreshold, TimeEntry } from "../electron/types"
 import { getDuration, midnight, pad2, useEphemeralState } from "./util"
 import classNames from "classnames"
 import ipc from "./ipc"
+import { isDev } from "./buildInfo"
 
 export function History() {
     const state = useContext(StateContext)
@@ -56,7 +57,7 @@ export function History() {
                         setConfirmingDeleteAll(true)
                     }
                 }}>{confirmingDeleteAll ? "confirm" : "delete all"}</div>}
-                <div className="_button text-sm -mt-5" onClick={() => ipc.loadMockData()}>load mock data</div>
+                {isDev && <div className="_button text-sm -mt-5" onClick={() => ipc.loadMockData()}>load mock data</div>}
             </div>
         </div>
     </>

@@ -3,4 +3,4 @@
 
 export const version: string = "{{INJECT: VERSION}}"
 
-export const isDev = version === "dev"
+export const isDev = version === "(dev)"
