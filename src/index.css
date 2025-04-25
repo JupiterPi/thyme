@@ -3,6 +3,8 @@
 @theme {
     --font-sans: "DM Sans", sans-serif;
     --font-mono: "Space Mono", seif;
+
+    --animate-clock: clock 8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
 }
 
 body {
@@ -40,4 +42,16 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
     background: var(--color-green-600);
+}
+
+@keyframes clock {
+    0%    { transform: rotate(calc(0     * 1turn)); }
+    12.5% { transform: rotate(calc(0.125 * 1turn)); }
+    25%   { transform: rotate(calc(0.25  * 1turn)); }
+    37.5% { transform: rotate(calc(0.375 * 1turn)); }
+    50%   { transform: rotate(calc(0.5   * 1turn)); }
+    62.5% { transform: rotate(calc(0.625 * 1turn)); }
+    75%   { transform: rotate(calc(0.75  * 1turn)); }
+    87.5% { transform: rotate(calc(0.875 * 1turn)); }
+    100%  { transform: rotate(calc(1     * 1turn)); }
 }

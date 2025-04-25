@@ -1,8 +1,8 @@
 import dateFormat from "dateformat"
-import { getDuration, pad2, useCurrentTime } from "./util"
+import { pad2 } from "./util"
 import icon from "./assets/icon.svg"
 import classNames from "classnames"
-import { useContext } from "react"
+import { useContext, useEffect, useState } from "react"
 import { StateContext } from "./main"
 import ipc from "./ipc"
 
@@ -11,16 +11,24 @@ export function Dashboard() {
     const isActive = state.activeStartTime !== null
     const activeStartTime = state.activeStartTime
 
-    const now = useCurrentTime()
-    const duration = isActive ? getDuration(activeStartTime!, now) : { hours: 0, minutes: 0, seconds: 0 }
+    const [durationSeconds, setDurationSeconds] = useState(0)
+    useEffect(() => {
+        setDurationSeconds(Math.floor((new Date().getTime() - (activeStartTime?.getTime() ?? 0)) / 1000))
+        const interval = setInterval(() => {
+            setDurationSeconds(d => d + 1)
+        }, 1000)
+        return () => clearInterval(interval)
+    }, [isActive])
 
-    const displayStartTime = isActive ? activeStartTime! : new Date()
+    const duration = isActive
+        ? { hours: Math.floor(durationSeconds / (60*60)), minutes: Math.floor((durationSeconds % (60*60)) / 60), seconds: durationSeconds % 60 }
+        : { hours: 0, minutes: 0, seconds: 0 }
 
     return <>
 
         {/* icon */}
         <div className={classNames("w-20 h-20 rounded-xl bg-green-300 cursor-pointer", {"grayscale-100": !isActive})} onClick={() => ipc.toggleActive()}>
-            <img src={icon} className="h-full p-2"></img>
+            <img src={icon} className={classNames("h-full p-2", {"animate-clock": isActive})}></img>
         </div>
 
         {/* current timer */}
@@ -28,9 +36,9 @@ export function Dashboard() {
             <div className={classNames("_container", {"grayscale-100": !isActive})}>
                 <div className="text-green-800 font-medium">start time:</div>
                 <div className="font-mono font-bold text-green-900 text-3xl">
-                    {dateFormat(displayStartTime, "HH")}
+                    {dateFormat((isActive ? activeStartTime! : new Date()), "HH")}
                     <span className="text-green-600">:</span>
-                    {dateFormat(displayStartTime, "MM")}
+                    {dateFormat((isActive ? activeStartTime! : new Date()), "MM")}
                 </div>
                 <div className="h-2"></div>
                 <div className="text-green-800 font-medium">duration:</div>

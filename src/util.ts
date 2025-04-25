@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 export function getDuration(a: Date, b: Date) {
     const duration = a.getTime() > b.getTime() ? 0 : b.getTime() - a.getTime()
@@ -10,15 +10,6 @@ export function getDuration(a: Date, b: Date) {
 
 export function pad2(num: number) {
     return num < 10 ? `0${num}` : `${num}`
-}
-
-export function useCurrentTime() {
-    const [currentTime, setCurrentTime] = useState(new Date())
-    useEffect(() => {
-        const interval = setInterval(() => setCurrentTime(new Date()), 1000)
-        return () => clearInterval(interval)
-    }, [])
-    return currentTime
 }
 
 export function midnight(baseTime: Date, addOneDay: boolean) {
