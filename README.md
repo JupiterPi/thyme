@@ -6,7 +6,7 @@ _**Thyme** is a stopwatch in your taskbar with history._
 
 **Windows:** Download and run the latest installer from the [release page](https://github.com/JupiterPi/thyme/releases/latest). 
 
-**Linux:** Download and run the latest AppImage from the [release page](https://github.com/JupiterPi/thyme/releases/latest). Note that not every desktop environment supports tray icons out-of-the-box. 
+**Linux:** Download the latest AppImage from the [release page](https://github.com/JupiterPi/thyme/releases/latest), make it executable (`chmod a+x thyme-*`) and run it. Note that not every desktop environment supports tray icons out-of-the-box (on GNOME, you can install [Extension Manager](https://github.com/mjakeman/extension-manager) and install the "AppIndicator and KStatusNotifierItem Support" extension). 
 
 **Other platforms:** As of now, you'll have to build from source: `git clone https://github.com/JupiterPi/thyme && cd thyme && npm i && npm run build`
 
@@ -20,4 +20,4 @@ _**Thyme** is a stopwatch in your taskbar with history._
 
 Thyme is in development, and more features are on the way. 
 
-Thank you for using Thyme 🌿
+I hope you enjoy using Thyme 🌿
