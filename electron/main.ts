@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url"
 import path from "node:path"
 import { TrayIcon } from "./trayIcon"
 import { PersistentState } from "./persistentState"
-import { first, map, Observable } from "rxjs"
+import { first, Observable } from "rxjs"
 import fs from "node:fs"
 import { ipcPullChannels, ipcPushChannels } from "./ipcChannels"
 import { pages, WindowManager } from "./windowManager"
@@ -58,7 +58,7 @@ app.whenReady().then(() => {
   // tray icon
   new TrayIcon({
     vitePublicDirectory: process.env.VITE_PUBLIC,
-    isActive: persistentState.getActiveStartTime().pipe(map(activeStartTime => activeStartTime !== null)),
+    activeStartTime$: persistentState.getActiveStartTime(),
     toggleActive: () => toggleActive(),
     toggleOpen: () => {
       const window = windowManager.findWindow(pages.dashboard)

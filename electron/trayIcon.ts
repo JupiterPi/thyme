@@ -1,6 +1,7 @@
 import path from "path"
 import { Menu, nativeImage, Tray } from "electron"
 import { Observable } from "rxjs"
+import { getDuration, pad2 } from "./util"
 
 export class TrayIcon {
   private tray: Tray
@@ -8,10 +9,11 @@ export class TrayIcon {
   private readonly inactiveTrayIcon: Electron.NativeImage
   
   private _isActive = false
+  private _activeStartTime: Date | null = null
 
-  constructor({ vitePublicDirectory, isActive, toggleActive, toggleOpen, openDashboard, quit }: {
+  constructor({ vitePublicDirectory, activeStartTime$, toggleActive, toggleOpen, openDashboard, quit }: {
     vitePublicDirectory: string,
-    isActive: Observable<boolean>,
+    activeStartTime$: Observable<Date | null>,
     toggleActive: () => void,
     toggleOpen: () => void,
     openDashboard: () => void,
@@ -23,7 +25,9 @@ export class TrayIcon {
     this.tray = new Tray(this.inactiveTrayIcon)
     this.updateIsActiveIndicator(false)
 
-    isActive.subscribe(isActive => {
+    activeStartTime$.subscribe(activeStartTime => {
+      this._activeStartTime = activeStartTime
+      const isActive = activeStartTime !== null
       this._isActive = isActive
       this.updateIsActiveIndicator(isActive)
     })
@@ -58,14 +62,28 @@ export class TrayIcon {
       { label: "Quit", type: "normal", click: () => quit() },
     ])
     this.tray.setContextMenu(contextMenu)
+
+    // update duration in tooltip
+    setInterval(() => {
+      if (this._isActive) this.updateTooltip()
+    }, 30 * 1000)
   }
 
   private isActiveIndicator = false
   private updateIsActiveIndicator(isActive: boolean) {
     if (isActive !== this.isActiveIndicator) {
-      this.tray.setToolTip(`Thyme (${isActive ? "active" : "inactive"})`)
       this.tray.setImage(isActive ? this.activeTrayIcon : this.inactiveTrayIcon)
+      this.updateTooltip()
     }
     this.isActiveIndicator = isActive
+  }
+
+  private updateTooltip() {
+    if (this._isActive) {
+      const duration = getDuration(this._activeStartTime!, new Date())
+      this.tray.setToolTip(`Thyme: ${pad2(duration.hours)}:${pad2(duration.minutes)}h`)
+    } else {
+      this.tray.setToolTip("Thyme")
+    }
   }
 }
