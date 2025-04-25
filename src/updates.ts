@@ -1,6 +1,6 @@
 import { BehaviorSubject, filter, first } from "rxjs"
 
-let latestVersion$: BehaviorSubject<string | undefined> | undefined = new BehaviorSubject<string | undefined>("v0.0.asdf") //TODO tmp
+let latestVersion$: BehaviorSubject<string | undefined> | undefined = new BehaviorSubject<string | undefined>(undefined)
 export async function getLatestVersion() {
     if (latestVersion$ === undefined) {
         latestVersion$ = new BehaviorSubject<string | undefined>(undefined)
