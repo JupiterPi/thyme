@@ -20,34 +20,40 @@ export function History() {
     return <>
         <div className="flex justify-center">
             <div className="flex flex-col w-full gap-6 items-center" onMouseLeave={() => setExpandedId(null)}>
-                {timeEntriesGrouped.map(entries => (
-                    <div className="flex flex-col gap-2 w-full items-center" key={entries[0]!.startTime.toLocaleDateString()}>
-                        <div className="text-green-700">{formatOnlyDate(entries[0]!.startTime)}</div>
+                {timeEntriesGrouped.map(entries => {
+                    const totalDuration = entries.reduce((acc, entry) => acc + (entry.endTime.getTime() - entry.startTime.getTime()), 0)
+                    return (
+                        <div className="flex flex-col gap-2 w-full items-center" key={entries[0]!.startTime.toLocaleDateString()}>
+                            <div className="text-green-700">
+                                {formatOnlyDate(entries[0]!.startTime)} <span> </span>
+                                ({`${pad2(Math.floor(totalDuration / 1000 / 60 / 60))}:${pad2(Math.floor(totalDuration / 1000 / 60) % 60)}h`})
+                            </div>
 
-                        {(() => {
-                            const pauseElementId = "pause:undefined"
-                            return expandedId === pauseElementId
-                                ? <PauseExpanded key={pauseElementId} previousEntry={entries[0]!} nextEntry={undefined} />
-                                : <PauseCollapsed key={pauseElementId} previousEntry={entries[0]!} nextEntry={undefined} onExpand={() => setExpandedId(pauseElementId)} />
-                        })()}
-                        
-                        {entries.map((_, i) => {
-                            const entry = entries[i]
-                            const previousEntry: TimeEntry | undefined = entries[i + 1]
-                            const nextEntry: TimeEntry | undefined = entries[i - 1]
-                            const entryElementId = `entry:${entry.id}`
-                            const pauseElementId = `pause:${entry.id}`
-                            return <>
-                                {expandedId === entryElementId
-                                    ? <TimeEntryExpanded key={entryElementId} timeEntry={entry} previousEntry={previousEntry} nextEntry={nextEntry} />
-                                    : <TimeEntryCollapsed key={entryElementId} timeEntry={entry} onExpand={() => setExpandedId(entryElementId)} />}
-                                {expandedId === pauseElementId
-                                    ? <PauseExpanded key={pauseElementId} previousEntry={previousEntry} nextEntry={entry} />
-                                    : <PauseCollapsed key={pauseElementId} previousEntry={previousEntry} nextEntry={entry} onExpand={() => setExpandedId(pauseElementId)} />}
-                            </>
-                        })}
-                    </div>
-                ))}
+                            {(() => {
+                                const pauseElementId = "pause:undefined"
+                                return expandedId === pauseElementId
+                                    ? <PauseExpanded key={pauseElementId} previousEntry={entries[0]!} nextEntry={undefined} />
+                                    : <PauseCollapsed key={pauseElementId} previousEntry={entries[0]!} nextEntry={undefined} onExpand={() => setExpandedId(pauseElementId)} />
+                            })()}
+                            
+                            {entries.map((_, i) => {
+                                const entry = entries[i]
+                                const previousEntry: TimeEntry | undefined = entries[i + 1]
+                                const nextEntry: TimeEntry | undefined = entries[i - 1]
+                                const entryElementId = `entry:${entry.id}`
+                                const pauseElementId = `pause:${entry.id}`
+                                return <>
+                                    {expandedId === entryElementId
+                                        ? <TimeEntryExpanded key={entryElementId} timeEntry={entry} previousEntry={previousEntry} nextEntry={nextEntry} />
+                                        : <TimeEntryCollapsed key={entryElementId} timeEntry={entry} onExpand={() => setExpandedId(entryElementId)} />}
+                                    {expandedId === pauseElementId
+                                        ? <PauseExpanded key={pauseElementId} previousEntry={previousEntry} nextEntry={entry} />
+                                        : <PauseCollapsed key={pauseElementId} previousEntry={previousEntry} nextEntry={entry} onExpand={() => setExpandedId(pauseElementId)} />}
+                                </>
+                            })}
+                        </div>
+                    )
+                })}
                 {state.timeEntries.length === 0 && <div className="text-green-700">No entries</div>}
                 {state.timeEntries.length > 0 && <div className="_button text-sm" onClick={() => {
                     if (confirmingDeleteAll) {
