@@ -5,7 +5,7 @@ import { getLatestVersion } from "./updates";
 export function Settings() {
     const [latestVersion, setLatestVersion] = useState<string | undefined>(undefined);
     useEffect(() => {
-        getLatestVersion().then(version => setLatestVersion(version))
+        getLatestVersion().then(version => setLatestVersion(version)).catch(e => console.error(e))
     }, [])
 
     return (
