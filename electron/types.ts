@@ -13,3 +13,5 @@ export type TimeEntry = {
     startTime: Date,
     endTime: Date,
 }
+
+export const mergeThreshold = 1 * 60 * 1000

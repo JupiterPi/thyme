@@ -2,3 +2,5 @@
 // see package.json
 
 export const version: string = "{{INJECT: VERSION}}"
+
+export const isDev = version === "dev"

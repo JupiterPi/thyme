@@ -3,7 +3,8 @@ import { randomUUID } from "node:crypto"
 import { PathLike } from "node:fs"
 import fs from "node:fs/promises"
 import { exists, parseDateReviver } from "./util"
-import { State, TimeEntry } from "./types"
+import { mergeThreshold, State, TimeEntry } from "./types"
+import dateFormat from "dateformat"
 
 export class PersistentState {
     // state
@@ -28,7 +29,8 @@ export class PersistentState {
         return new Promise<TimeEntry>(resolve => {
             const newTimeEntry = { id: randomUUID(), startTime, endTime }
             this.timeEntries$.pipe(first()).subscribe(timeEntries => {
-                this.timeEntries$.next([...timeEntries, newTimeEntry])
+                const updatedEntries = [...timeEntries, newTimeEntry]
+                this.timeEntries$.next(normalizeTimeEntries(updatedEntries))
                 resolve(newTimeEntry)
             })
         })
@@ -38,7 +40,7 @@ export class PersistentState {
         return new Promise<TimeEntry>(resolve => {
             this.timeEntries$.pipe(first()).subscribe(timeEntries => {
                 const updatedEntries = timeEntries.map(timeEntry => timeEntry.id === updatedTimeEntry.id ? updatedTimeEntry : timeEntry)
-                this.timeEntries$.next(updatedEntries)
+                this.timeEntries$.next(normalizeTimeEntries(updatedEntries))
                 resolve(updatedTimeEntry)
             })
         })
@@ -68,6 +70,22 @@ export class PersistentState {
 
     public getState() {
         return this.state$
+    }
+
+    public loadMockData() {
+        return new Promise<void>(resolve => {
+            const time = (hours: number, minutes: number) => {
+                const date = new Date("2000-01-01T00:00:00Z")
+                date.setHours(hours, minutes)
+                return date
+            }
+            const mockData: TimeEntry[] = [
+                { id: "1", startTime: time(14,0), endTime: time(14,5) },
+                { id: "2", startTime: time(14,10), endTime: time(14,15) },
+            ]
+            this.timeEntries$.next(mockData)
+            resolve()
+        })
     }
 
     // persistence
@@ -104,4 +122,74 @@ export class PersistentState {
             })
         })
     }
+}
+
+export function normalizeTimeEntries(entries: TimeEntry[]) {
+    const mergeEntries = (a: TimeEntry, b: TimeEntry): TimeEntry => {
+        const timeBounds = [a.startTime, a.endTime, b.startTime, b.endTime].map(t => t.getTime()).toSorted()
+        const startTime = new Date(timeBounds[0])
+        const endTime = new Date(timeBounds[3])
+        return { id: randomUUID(), startTime, endTime }
+    }
+    const splitEntry = (entry: TimeEntry, splitTime: Date): [TimeEntry, TimeEntry] => {
+        return [
+            { id: randomUUID(), startTime: entry.startTime, endTime: new Date(splitTime.getTime()) },
+            { id: randomUUID(), startTime: new Date(splitTime.getTime()), endTime: entry.endTime },
+        ]
+    }
+
+    entries = entries
+        .filter(entry => {
+            // discard negative duration entries
+            return entry.startTime.getTime() < entry.endTime.getTime()
+        })
+        .flatMap(entry => {
+            // split entries that go over midnight
+            const goesOverMidnight = (entry: TimeEntry) => entry.startTime.toLocaleDateString() !== entry.endTime.toLocaleDateString() && dateFormat(entry.endTime, "HH:MM:ss.l") !== "00:00:00.000"
+            if (goesOverMidnight(entry)) {
+                const entries: TimeEntry[] = []
+                let currentEntry: TimeEntry = entry
+                let midnight = new Date(entry.startTime)
+                while (goesOverMidnight(currentEntry)) {
+                    midnight.setHours(24, 0, 0, 0) // set to the start of the next day
+                    const [a, b] = splitEntry(currentEntry, midnight)
+                    entries.push(a)
+                    currentEntry = b
+                }
+                entries.push(currentEntry)
+                return entries
+            } else {
+                return entry
+            }
+        })
+
+    // sort entries
+    const sortedEntries = entries.sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
+    
+    const mergedEntries: TimeEntry[] = []
+    let currentEntry: TimeEntry | undefined = undefined
+    for (const entry of sortedEntries) {
+        if (currentEntry === undefined) {
+            currentEntry = entry
+            continue
+        }
+        if (
+            // if the entries are overlapping, merge them
+            // if the entries are below the threshold apart, merge them
+            entry.startTime.getTime() - currentEntry.endTime.getTime() <= mergeThreshold
+            // don't merge over midnight
+            && currentEntry.startTime.toLocaleDateString() === entry.startTime.toLocaleDateString()
+        ) {
+            currentEntry = mergeEntries(currentEntry, entry)
+        } else {
+            // otherwise push the current entry and start a new one
+            mergedEntries.push(currentEntry)
+            currentEntry = entry
+        }
+    }
+    if (currentEntry) {
+        mergedEntries.push(currentEntry)
+    }
+    
+    return mergedEntries
 }

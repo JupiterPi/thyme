@@ -1,8 +1,8 @@
 import { useContext, useState } from "react"
 import { StateContext } from "./main"
 import dateFormat from "dateformat"
-import { TimeEntry } from "../electron/types"
-import { getDuration, pad2, useEphemeralState } from "./util"
+import { mergeThreshold, TimeEntry } from "../electron/types"
+import { getDuration, midnight, pad2, useEphemeralState } from "./util"
 import classNames from "classnames"
 import ipc from "./ipc"
 
@@ -19,19 +19,34 @@ export function History() {
     return <>
         <div className="flex justify-center">
             <div className="flex flex-col w-full gap-6 items-center" onMouseLeave={() => setExpandedId(null)}>
-                {timeEntriesGrouped.map(entries => {
-                    return <div className="flex flex-col gap-2 w-full items-center" key={entries[0]!.startTime.toLocaleDateString()}>
+                {timeEntriesGrouped.map(entries => (
+                    <div className="flex flex-col gap-2 w-full items-center" key={entries[0]!.startTime.toLocaleDateString()}>
                         <div className="text-green-700">{formatOnlyDate(entries[0]!.startTime)}</div>
+
+                        {(() => {
+                            const pauseElementId = "pause:undefined"
+                            return expandedId === pauseElementId
+                                ? <PauseExpanded key={pauseElementId} previousEntry={entries[0]!} nextEntry={undefined} />
+                                : <PauseCollapsed key={pauseElementId} previousEntry={entries[0]!} nextEntry={undefined} onExpand={() => setExpandedId(pauseElementId)} />
+                        })()}
+                        
                         {entries.map((_, i) => {
                             const entry = entries[i]
                             const previousEntry: TimeEntry | undefined = entries[i + 1]
                             const nextEntry: TimeEntry | undefined = entries[i - 1]
-                            return entry.id === expandedId
-                            ? <TimeEntryExpanded key={entry.id} timeEntry={entry} previousEntry={previousEntry} nextEntry={nextEntry} />
-                            : <TimeEntryCollapsed key={entry.id} timeEntry={entry} onExpand={() => setExpandedId(entry.id)} />
+                            const entryElementId = `entry:${entry.id}`
+                            const pauseElementId = `pause:${entry.id}`
+                            return <>
+                                {expandedId === entryElementId
+                                    ? <TimeEntryExpanded key={entryElementId} timeEntry={entry} previousEntry={previousEntry} nextEntry={nextEntry} />
+                                    : <TimeEntryCollapsed key={entryElementId} timeEntry={entry} onExpand={() => setExpandedId(entryElementId)} />}
+                                {expandedId === pauseElementId
+                                    ? <PauseExpanded key={pauseElementId} previousEntry={previousEntry} nextEntry={entry} />
+                                    : <PauseCollapsed key={pauseElementId} previousEntry={previousEntry} nextEntry={entry} onExpand={() => setExpandedId(pauseElementId)} />}
+                            </>
                         })}
                     </div>
-                })}
+                ))}
                 {state.timeEntries.length === 0 && <div className="text-green-700">No entries</div>}
                 {state.timeEntries.length > 0 && <div className="_button text-sm" onClick={() => {
                     if (confirmingDeleteAll) {
@@ -41,6 +56,7 @@ export function History() {
                         setConfirmingDeleteAll(true)
                     }
                 }}>{confirmingDeleteAll ? "confirm" : "delete all"}</div>}
+                <div className="_button text-sm -mt-5" onClick={() => ipc.loadMockData()}>load mock data</div>
             </div>
         </div>
     </>
@@ -70,18 +86,12 @@ function TimeEntryExpanded({ timeEntry, previousEntry, nextEntry }: { timeEntry:
             upperLimits.forEach(limit => limit !== undefined && (date = Math.min(date, limit.getTime())))
             return new Date(date)
         }
-        const midnight = (addOneDay: boolean) => {
-            const midnight = new Date(startTime)
-            addOneDay && midnight.setDate(midnight.getDate() + 1)
-            midnight.setHours(0, 0, 0, 0)
-            return midnight
-        }
         if (editingField === "start") {
             const newStartTime = new Date(startTime.getTime() + delta * 60 * 1000)
-            setStartTime(clamp([midnight(false), previousEntry?.endTime], [endTime], newStartTime))
+            setStartTime(clamp([midnight(startTime, false), previousEntry?.endTime], [endTime], newStartTime))
         } else if (editingField === "end") {
             const newEndTime = new Date(endTime.getTime() + delta * 60 * 1000)
-            setEndTime(clamp([startTime], [midnight(true), nextEntry?.startTime], newEndTime))
+            setEndTime(clamp([startTime], [midnight(startTime, true), nextEntry?.startTime], newEndTime))
         }
     }
     const saveChanges = () => {
@@ -89,11 +99,19 @@ function TimeEntryExpanded({ timeEntry, previousEntry, nextEntry }: { timeEntry:
         setEditingField(null)
     }
 
+    const insertPause = () => {
+        // TODO
+    }
+
+    const deleteEntry = () => {
+        ipc.deleteTimeEntry(timeEntry.id)
+    }
+
     const duration = getDuration(startTime, endTime)
 
     return (
         <div className="flex flex-col gap-0 items-center">
-            <div className={classNames("_container bg-green-200! w-fit p-1.5! pt-0.5! flex items-center gap-2", {"border-b-transparent! rounded-b-[0]!": editingField !== null})}>
+            <div className="_container bg-green-200! w-fit p-1.5! pt-0.5! flex items-center gap-2">
                 {[
                     {label: "start", editable: editingField === null, hoursStr: dateFormat(startTime, "HH"), minutesStr: dateFormat(startTime, "MM")},
                     {label: "duration", editable: false, hoursStr: pad2(duration.hours), minutesStr: pad2(duration.minutes)},
@@ -111,9 +129,9 @@ function TimeEntryExpanded({ timeEntry, previousEntry, nextEntry }: { timeEntry:
                     </div>
                 ))}
             </div>
-            <div className="_container bg-green-200! w-fit p-1! flex items-center gap-2 border-t-transparent! rounded-t-[0]!">
-                <div className="_button text-sm">insert pause</div>
-                <div className="_button text-sm" onClick={() => ipc.deleteTimeEntry(timeEntry.id)}>delete</div>
+            <div className={classNames("_container bg-green-200! w-fit p-1! flex items-center gap-2 border-t-transparent! rounded-t-[0]!", {"border-b-transparent! rounded-b-[0]!": editingField !== null})}>
+                <div className="_button text-sm" onClick={insertPause}>insert pause</div>
+                <div className="_button text-sm" onClick={deleteEntry}>delete</div>
             </div>
             {editingField !== null && (
                 <div className="_container bg-green-200! w-fit p-1! flex items-center gap-1">
@@ -124,6 +142,66 @@ function TimeEntryExpanded({ timeEntry, previousEntry, nextEntry }: { timeEntry:
                     <div className="_button font-mono text-sm" onClick={() => saveChanges()}>OK</div>
                 </div>
             )}
+        </div>
+    )
+}
+
+function PauseCollapsed({ previousEntry, nextEntry, onExpand }: { previousEntry?: TimeEntry, nextEntry?: TimeEntry, onExpand: () => void }) {
+    if (previousEntry === undefined && nextEntry === undefined) return null
+    const previousTime = previousEntry?.endTime ?? midnight(nextEntry!.startTime, false)
+    const nextTime = nextEntry?.startTime ?? midnight(previousEntry!.startTime, true)
+    const duration = getDuration(previousTime, nextTime)
+    if (duration.hours === 0 && duration.minutes === 0) return <></>
+    return (
+        <div className="_container text-green-700 text-sm bg-gray-200! border-gray-300! p-1.5! font-mono" onMouseEnter={onExpand}>{pad2(duration.hours)}:{pad2(duration.minutes)}h</div>
+    )
+}
+
+function PauseExpanded({ previousEntry, nextEntry }: { previousEntry?: TimeEntry, nextEntry?: TimeEntry }) {
+    if (previousEntry === undefined && nextEntry === undefined) return null
+    const previousTime = previousEntry?.endTime ?? midnight(nextEntry!.startTime, false)
+    const nextTime = nextEntry?.startTime ?? midnight(previousEntry!.startTime, true)
+    const duration = getDuration(previousTime, nextTime)
+
+    const insertEntry = () => {
+        const startTime = new Date(previousTime.getTime() + mergeThreshold + 1)
+        const endTime = new Date(nextTime.getTime() - mergeThreshold - 1)
+        console.log("creatingEntry:", {startTime, endTime})
+        ipc.createTimeEntry(startTime, endTime)
+    }
+
+    const deletePause = () => {
+        if (nextEntry !== undefined) {
+            ipc.updateTimeEntry({
+                ...nextEntry,
+                startTime: previousTime,
+            })
+        } else {
+            ipc.updateTimeEntry({
+                ...previousEntry!,
+                endTime: nextTime,
+            })
+        }
+    }
+
+    return (
+        <div className="flex flex-col gap-0 items-center">
+            <div className="_container bg-gray-200! border-gray-400! w-fit p-1.5! pt-0.5! flex items-center gap-2 border-b-transparent! rounded-b-[0]!">
+                <div className="flex flex-col items-center">
+                        <div className="text-gray-600 font-medium text-sm">pause</div>
+                        <div className="bg-gray-300 px-2 rounded-lg group outline-1 outline-transparent">
+                            <div className="font-mono font-bold text-green-900 text-2xl">
+                                {pad2(duration.hours)}
+                                <span className="text-gray-600">:</span>
+                                {pad2(duration.minutes)}
+                            </div>
+                        </div>
+                    </div>
+            </div>
+            <div className="_container bg-gray-200! border-gray-400! w-fit p-1! flex items-center gap-2">
+                <div className="_button text-sm" onClick={insertEntry}>insert entry</div>
+                <div className="_button text-sm" onClick={deletePause}>{(previousEntry !== undefined && nextEntry !== undefined) ? "merge entries" : "delete"}</div>
+            </div>
         </div>
     )
 }

@@ -21,6 +21,13 @@ export function useCurrentTime() {
     return currentTime
 }
 
+export function midnight(baseTime: Date, addOneDay: boolean) {
+    const midnight = new Date(baseTime)
+    midnight.setHours(0, 0, 0, 0)
+    addOneDay && midnight.setTime(midnight.getTime() + 24*60*60*1000)
+    return midnight
+}
+
 export function useEphemeralState<T>(initialValue: T, timeout: number): [T, (value: T) => void] {
   const [state, setStateInternal] = useState<T>(initialValue)
   const [timeoutReference, setTimeoutReference] = useState<NodeJS.Timeout | null>(null)

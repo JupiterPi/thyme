@@ -36,7 +36,7 @@ function injectBuildInfo() {
     name: "inject-build-info",
     transform(src: string, id: string) {
       if (id.endsWith("buildInfo.ts")) {
-        return src.replace("{{INJECT: VERSION}}", process.env.THYME_VERSION ?? "(unknown version)")
+        return src.replace("{{INJECT: VERSION}}", process.env.THYME_VERSION ?? "(dev)")
       }
       return src
     }

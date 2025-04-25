@@ -87,9 +87,11 @@ function toggleActive() {
 
 export const PushIPC = {
   toggleActive: () => toggleActive(),
+  createTimeEntry: (startTime: Date, endTime: Date) => persistentState.addTimeEntry(startTime, endTime),
   updateTimeEntry: (timeEntry: TimeEntry) => persistentState.updateTimeEntry(timeEntry),
   deleteTimeEntry: (id: string) => persistentState.deleteTimeEntry(id),
   deleteAllTimeEntries: () => persistentState.deleteAllTimeEntries(),
+  loadMockData: () => persistentState.loadMockData(),
   openHistory: () => windowManager.openOrShowPage(pages.history),
   closePage: (pageId: string) => windowManager.closeWindow(pageId),
 } satisfies { [key in typeof ipcPushChannels[number]]: (...args: any[]) => any }
