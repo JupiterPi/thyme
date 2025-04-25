@@ -6,10 +6,13 @@ on:
 
 jobs:
   build-and-publish-binaries:
-    name: Build and publish binaries (win)
-    runs-on: windows-latest
+    name: Build and publish binaries (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: write
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -27,7 +30,17 @@ jobs:
       - run: npm run build
         env: 
           THYME_VERSION: ${{ github.event.release.tag_name }}
+      - name: Rename and move release binaries
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const path = require("path");
+            const version = ${{ github.event.release.tag_name }};
+            fs.mkdirSync("./releaseBinaries");
+            if (${{ matrix.os == 'windows-latest'}}) fs.renameSync(`release/thyme-${version.slice(1)}-win-setup.exe`, `releaseBinaries/thyme-${version}-win-setup.exe`);
+            if (${{ matrix.os == 'ubuntu-latest'}}) fs.renameSync(`release/thyme-${version.slice(1)}-linux.AppImage`, `releaseBinaries/thyme-${version}-linux.AppImage`);
       - name: Attach binaries to release
         uses: softprops/action-gh-release@v2
         with:
-          files: release/*/thyme-*-win-setup.exe
+          files: releaseBinaries/*
