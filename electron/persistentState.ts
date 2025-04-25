@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto"
 import { PathLike } from "node:fs"
 import fs from "node:fs/promises"
 import { exists, parseDateReviver } from "./util"
-import { mergeThreshold, State, TimeEntry } from "./types"
+import { mergeThreshold, State, TimeEntriesAction, TimeEntry } from "./types"
 import dateFormat from "dateformat"
 
 export class PersistentState {
@@ -23,6 +23,25 @@ export class PersistentState {
 
     public getTimeEntries() {
         return this.timeEntries$.asObservable()
+    }
+
+    public reduceTimeEntries(actions: TimeEntriesAction[]) {
+        return new Promise<void>(resolve => {
+            this.timeEntries$.pipe(first()).subscribe(timeEntries => {
+                const updatedTimeEntries = actions.reduce(((timeEntries: TimeEntry[], action: TimeEntriesAction) => {
+                    switch (action.type) {
+                        case "createEntry":
+                            return [...timeEntries, { id: randomUUID(), startTime: action.startTime, endTime: action.endTime }]
+                        case "updateEntry":
+                            return timeEntries.map(timeEntry => timeEntry.id === action.entry.id ? action.entry : timeEntry)
+                        case "deleteEntry":
+                            return timeEntries.filter(timeEntry => timeEntry.id !== action.id)
+                    }
+                }), timeEntries)
+                this.timeEntries$.next(normalizeTimeEntries(updatedTimeEntries))
+                resolve()
+            })
+        })
     }
 
     public addTimeEntry(startTime: Date, endTime: Date) {

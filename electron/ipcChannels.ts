@@ -1,8 +1,6 @@
 export const ipcPushChannels = [
     "toggleActive",
-    "createTimeEntry",
-    "updateTimeEntry",
-    "deleteTimeEntry",
+    "reduceTimeEntries",
     "deleteAllTimeEntries",
     "loadMockData",
     "openHistory",

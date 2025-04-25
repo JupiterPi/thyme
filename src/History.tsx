@@ -95,16 +95,21 @@ function TimeEntryExpanded({ timeEntry, previousEntry, nextEntry }: { timeEntry:
         }
     }
     const saveChanges = () => {
-        ipc.updateTimeEntry({ ...timeEntry, startTime: startTime, endTime: endTime })
+        ipc.reduceTimeEntries({ type: "updateEntry", entry: { ...timeEntry, startTime, endTime } })
         setEditingField(null)
     }
 
     const insertPause = () => {
-        // TODO
+        const [pauseStart, pauseEnd] = splitTimeEquallyWithinMergeThreshold(timeEntry.startTime, timeEntry.endTime)
+        ipc.reduceTimeEntries(
+            { type: "deleteEntry", id: timeEntry.id },
+            { type: "createEntry", startTime: timeEntry.startTime, endTime: pauseStart },
+            { type: "createEntry", startTime: pauseEnd, endTime: timeEntry.endTime },
+        )
     }
 
     const deleteEntry = () => {
-        ipc.deleteTimeEntry(timeEntry.id)
+        ipc.reduceTimeEntries({ type: "deleteEntry", id: timeEntry.id })
     }
 
     const duration = getDuration(startTime, endTime)
@@ -164,23 +169,15 @@ function PauseExpanded({ previousEntry, nextEntry }: { previousEntry?: TimeEntry
     const duration = getDuration(previousTime, nextTime)
 
     const insertEntry = () => {
-        const startTime = new Date(previousTime.getTime() + mergeThreshold + 1)
-        const endTime = new Date(nextTime.getTime() - mergeThreshold - 1)
-        console.log("creatingEntry:", {startTime, endTime})
-        ipc.createTimeEntry(startTime, endTime)
+        const [entryStart, entryEnd] = splitTimeEquallyWithinMergeThreshold(previousTime, nextTime)
+        ipc.reduceTimeEntries({ type: "createEntry", startTime: entryStart, endTime: entryEnd })
     }
 
     const deletePause = () => {
         if (nextEntry !== undefined) {
-            ipc.updateTimeEntry({
-                ...nextEntry,
-                startTime: previousTime,
-            })
+            ipc.reduceTimeEntries({ type: "updateEntry", entry: { ...nextEntry, startTime: previousTime } })
         } else {
-            ipc.updateTimeEntry({
-                ...previousEntry!,
-                endTime: nextTime,
-            })
+            ipc.reduceTimeEntries({ type: "updateEntry", entry: { ...previousEntry!, endTime: nextTime, } })
         }
     }
 
@@ -204,4 +201,11 @@ function PauseExpanded({ previousEntry, nextEntry }: { previousEntry?: TimeEntry
             </div>
         </div>
     )
+}
+
+function splitTimeEquallyWithinMergeThreshold(startTime: Date, endTime: Date): [Date, Date] {
+    const timeEntryDuration = endTime.getTime() - startTime.getTime()
+    const pauseStart = Math.max(startTime.getTime() + mergeThreshold + 1, startTime.getTime() + timeEntryDuration * 0.333)
+    const pauseEnd = Math.min(endTime.getTime() - mergeThreshold - 1, startTime.getTime() + timeEntryDuration * 0.666)
+    return [new Date(pauseStart), new Date(pauseEnd)]
 }

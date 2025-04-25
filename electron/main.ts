@@ -7,7 +7,7 @@ import { first, map, Observable } from "rxjs"
 import fs from "node:fs"
 import { ipcPullChannels, ipcPushChannels } from "./ipcChannels"
 import { pages, WindowManager } from "./windowManager"
-import { TimeEntry } from "./types"
+import { TimeEntriesAction } from "./types"
 
 export const __dirname = path.dirname(fileURLToPath(import.meta.url))
 process.env.APP_ROOT = path.join(__dirname, "..")
@@ -87,9 +87,7 @@ function toggleActive() {
 
 export const PushIPC = {
   toggleActive: () => toggleActive(),
-  createTimeEntry: (startTime: Date, endTime: Date) => persistentState.addTimeEntry(startTime, endTime),
-  updateTimeEntry: (timeEntry: TimeEntry) => persistentState.updateTimeEntry(timeEntry),
-  deleteTimeEntry: (id: string) => persistentState.deleteTimeEntry(id),
+  reduceTimeEntries: (...actions: TimeEntriesAction[]) => persistentState.reduceTimeEntries(actions),
   deleteAllTimeEntries: () => persistentState.deleteAllTimeEntries(),
   loadMockData: () => persistentState.loadMockData(),
   openHistory: () => windowManager.openOrShowPage(pages.history),
