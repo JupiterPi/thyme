@@ -10,6 +10,7 @@ import { isDev } from "./buildInfo"
 export function History() {
     const state = useContext(StateContext)
 
+    const [expandedDayIndex, setExpandedDayIndex] = useState<number | null>(null)
     const [expandedId, setExpandedId] = useState<string | null>(state.timeEntries[0]?.id ?? null)
 
     const formatOnlyDate = (date: Date) => `${dateFormat(date, "DDDD") /* (e.g. "today") */}, ${date.toLocaleDateString()}`
@@ -18,43 +19,41 @@ export function History() {
     const [confirmingDeleteAll, setConfirmingDeleteAll] = useEphemeralState(false, 2000)
     
     return <>
-        <div className="flex justify-center">
+        <div className="flex justify-center w-full">
             <div className="flex flex-col w-full gap-6 items-center" onMouseLeave={() => setExpandedId(null)}>
-                {timeEntriesGrouped.map(entries => {
+                <div className="flex gap-2">
+                    {/* open raw JSON / export CSV */}
+                    <div className="_button text-sm" onClick={() => ipc.openJSON()}>open raw JSON</div>
+                    <div className="_button text-sm" onClick={() => ipc.exportCSV()}>export CSV</div>
+                </div>
+                {/* time entries list */}
+                {timeEntriesGrouped.map((entries, dayIndex) => {
                     const totalDuration = entries.reduce((acc, entry) => acc + (entry.endTime.getTime() - entry.startTime.getTime()), 0)
                     return (
                         <div className="flex flex-col gap-2 w-full items-center" key={entries[0]!.startTime.toLocaleDateString()}>
-                            <div className="text-green-700">
-                                {formatOnlyDate(entries[0]!.startTime)} <span> </span>
-                                ({`${pad2(Math.floor(totalDuration / 1000 / 60 / 60))}:${pad2(Math.floor(totalDuration / 1000 / 60) % 60)}h`})
+                            <div className="border-0 border-t-1 border-green-400 w-full mb-3"></div> { /* hr */}
+
+                            <div className="flex gap-3 items-center">
+                                {/* title (day and duration) */}
+                                <div className="font-semibold">
+                                    {formatOnlyDate(entries[0]!.startTime)} <span> </span>
+                                    ({`${pad2(Math.floor(totalDuration / 1000 / 60 / 60))}:${pad2(Math.floor(totalDuration / 1000 / 60) % 60)}h`})
+                                </div>
+                                {/* "-> entries", "-> timeline" buttons */}
+                                <div className="_button inline-block text-sm" onClick={() => setExpandedDayIndex(expandedDayIndex === dayIndex ? null : dayIndex)}>{expandedDayIndex !== dayIndex ? <span>&rarr;</span> : <span>&times;</span>} entries</div>
+                                <div className="_button inline-block text-sm" onClick={() => /* ipc.openTimeline(entries[0]!.id) */ {}}>&rarr; timeline</div>
                             </div>
 
-                            {(() => {
-                                const pauseElementId = "pause:undefined"
-                                return expandedId === pauseElementId
-                                    ? <PauseExpanded key={pauseElementId} previousEntry={entries[0]!} nextEntry={undefined} />
-                                    : <PauseCollapsed key={pauseElementId} previousEntry={entries[0]!} nextEntry={undefined} onExpand={() => setExpandedId(pauseElementId)} />
-                            })()}
-                            
-                            {entries.map((_, i) => {
-                                const entry = entries[i]
-                                const previousEntry: TimeEntry | undefined = entries[i + 1]
-                                const nextEntry: TimeEntry | undefined = entries[i - 1]
-                                const entryElementId = `entry:${entry.id}`
-                                const pauseElementId = `pause:${entry.id}`
-                                return <>
-                                    {expandedId === entryElementId
-                                        ? <TimeEntryExpanded key={entryElementId} timeEntry={entry} previousEntry={previousEntry} nextEntry={nextEntry} />
-                                        : <TimeEntryCollapsed key={entryElementId} timeEntry={entry} onExpand={() => setExpandedId(entryElementId)} />}
-                                    {expandedId === pauseElementId
-                                        ? <PauseExpanded key={pauseElementId} previousEntry={previousEntry} nextEntry={entry} />
-                                        : <PauseCollapsed key={pauseElementId} previousEntry={previousEntry} nextEntry={entry} onExpand={() => setExpandedId(pauseElementId)} />}
-                                </>
-                            })}
+                            {/* time entries */}
+                            {expandedDayIndex === dayIndex && <div className="pt-2">
+                                <TimeEntries entries={entries} expandedId={expandedId} setExpandedId={setExpandedId} />
+                            </div>}
                         </div>
                     )
                 })}
                 {state.timeEntries.length === 0 && <div className="text-green-700">No entries</div>}
+                <div className="border-0 border-t-1 border-green-400 w-full"></div> { /* hr */}
+                {/* delete all / load mock data buttons */}
                 <div className="flex flex-col items-center gap-2">
                     {state.timeEntries.length > 0 && <div className="_button text-sm" onClick={() => {
                         if (confirmingDeleteAll) {
@@ -64,13 +63,39 @@ export function History() {
                             setConfirmingDeleteAll(true)
                         }
                     }}>{confirmingDeleteAll ? "confirm" : "delete all"}</div>}
-                    <div className="_button text-sm" onClick={() => ipc.openJSON()}>open raw JSON</div>
-                    <div className="_button text-sm" onClick={() => ipc.exportCSV()}>export CSV</div>
                     {isDev && <div className="_button text-sm" onClick={() => ipc.loadMockData()}>load mock data (dev)</div>}
                 </div>
             </div>
         </div>
     </>
+}
+
+function TimeEntries({ entries, expandedId, setExpandedId }: { entries: TimeEntry[], expandedId: string | null, setExpandedId: (id: string) => void }) {
+    return <div className="flex flex-col gap-2 items-center">
+        {(() => {
+            const pauseElementId = "pause:undefined"
+            return expandedId === pauseElementId
+                ? <PauseExpanded key={pauseElementId} previousEntry={entries[0]!} nextEntry={undefined} />
+                : <PauseCollapsed key={pauseElementId} previousEntry={entries[0]!} nextEntry={undefined} onExpand={() => setExpandedId(pauseElementId)} />
+        })()}
+        
+        {/* entries */}
+        {entries.map((_, i) => {
+            const entry = entries[i]
+            const previousEntry: TimeEntry | undefined = entries[i + 1]
+            const nextEntry: TimeEntry | undefined = entries[i - 1]
+            const entryElementId = `entry:${entry.id}`
+            const pauseElementId = `pause:${entry.id}`
+            return <>
+                {expandedId === entryElementId
+                    ? <TimeEntryExpanded key={entryElementId} timeEntry={entry} previousEntry={previousEntry} nextEntry={nextEntry} />
+                    : <TimeEntryCollapsed key={entryElementId} timeEntry={entry} onExpand={() => setExpandedId(entryElementId)} />}
+                {expandedId === pauseElementId
+                    ? <PauseExpanded key={pauseElementId} previousEntry={previousEntry} nextEntry={entry} />
+                    : <PauseCollapsed key={pauseElementId} previousEntry={previousEntry} nextEntry={entry} onExpand={() => setExpandedId(pauseElementId)} />}
+            </>
+        })}
+    </div>
 }
 
 function TimeEntryCollapsed({ timeEntry, onExpand }: { timeEntry: TimeEntry, onExpand: () => void }) {
