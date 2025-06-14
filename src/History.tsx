@@ -55,15 +55,19 @@ export function History() {
                     )
                 })}
                 {state.timeEntries.length === 0 && <div className="text-green-700">No entries</div>}
-                {state.timeEntries.length > 0 && <div className="_button text-sm" onClick={() => {
-                    if (confirmingDeleteAll) {
-                        ipc.deleteAllTimeEntries()
-                        setConfirmingDeleteAll(false)
-                    } else {
-                        setConfirmingDeleteAll(true)
-                    }
-                }}>{confirmingDeleteAll ? "confirm" : "delete all"}</div>}
-                {isDev && <div className="_button text-sm -mt-5" onClick={() => ipc.loadMockData()}>load mock data (dev)</div>}
+                <div className="flex flex-col items-center gap-2">
+                    {state.timeEntries.length > 0 && <div className="_button text-sm" onClick={() => {
+                        if (confirmingDeleteAll) {
+                            ipc.deleteAllTimeEntries()
+                            setConfirmingDeleteAll(false)
+                        } else {
+                            setConfirmingDeleteAll(true)
+                        }
+                    }}>{confirmingDeleteAll ? "confirm" : "delete all"}</div>}
+                    <div className="_button text-sm" onClick={() => ipc.openJSON()}>open raw JSON</div>
+                    <div className="_button text-sm" onClick={() => ipc.exportCSV()}>export CSV</div>
+                    {isDev && <div className="_button text-sm" onClick={() => ipc.loadMockData()}>load mock data (dev)</div>}
+                </div>
             </div>
         </div>
     </>

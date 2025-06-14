@@ -2,7 +2,7 @@ import { auditTime, BehaviorSubject, combineLatest, first, map, Observable, shar
 import { randomUUID } from "node:crypto"
 import { PathLike } from "node:fs"
 import fs from "node:fs/promises"
-import { exists, parseDateReviver } from "./util"
+import { exists, getDuration, pad2, parseDateReviver } from "./util"
 import { mergeThreshold, State, TimeEntriesAction, TimeEntry } from "./types"
 import dateFormat from "dateformat"
 
@@ -141,6 +141,21 @@ export class PersistentState {
             })
         })
     }
+
+    public async exportCSV(file: string) {
+        return new Promise<void>(resolve => {
+            this.timeEntries$.pipe(first()).subscribe(entries => {
+                const csv = entries.map(entry => {
+                    const startTime = dateFormat(entry.startTime, "yyyy-mm-dd HH:MM:ss")
+                    const endTime = dateFormat(entry.endTime, "yyyy-mm-dd HH:MM:ss")
+                    const duration = getDuration(entry.startTime, entry.endTime)
+                    const durationStr = `${pad2(duration.hours)}:${pad2(duration.minutes)}`
+                    return [startTime, endTime, durationStr].join(";")
+                }).join("\n")
+                fs.writeFile(file, csv).then(resolve)
+            })
+        })
+    }
 }
 
 export function normalizeTimeEntries(entries: TimeEntry[]) {
@@ -168,7 +183,7 @@ export function normalizeTimeEntries(entries: TimeEntry[]) {
             if (goesOverMidnight(entry)) {
                 const entries: TimeEntry[] = []
                 let currentEntry: TimeEntry = entry
-                let midnight = new Date(entry.startTime)
+                const midnight = new Date(entry.startTime)
                 while (goesOverMidnight(currentEntry)) {
                     midnight.setHours(24, 0, 0, 0) // set to the start of the next day
                     const [a, b] = splitEntry(currentEntry, midnight)

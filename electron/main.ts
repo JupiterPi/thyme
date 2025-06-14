@@ -1,4 +1,5 @@
-import { app, BrowserWindow, ipcMain } from "electron"
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { app, BrowserWindow, ipcMain, shell, dialog } from "electron"
 import { fileURLToPath } from "node:url"
 import path from "node:path"
 import { TrayIcon } from "./trayIcon"
@@ -24,7 +25,8 @@ if (!fs.existsSync(userDataDir)) {
   fs.mkdirSync(userDataDir, { recursive: true })
 }
 
-const persistentState = new PersistentState(path.join(userDataDir, "data.json"))
+const persistentStateFile = path.join(userDataDir, "data.json")
+const persistentState = new PersistentState(persistentStateFile)
 
 const windowManager = new WindowManager()
 
@@ -90,6 +92,14 @@ export const PushIPC = {
   reduceTimeEntries: (...actions: TimeEntriesAction[]) => persistentState.reduceTimeEntries(actions),
   deleteAllTimeEntries: () => persistentState.deleteAllTimeEntries(),
   loadMockData: () => persistentState.loadMockData(),
+  openJSON: () => shell.showItemInFolder(persistentStateFile),
+  exportCSV: async () => {
+    const exportPath = await dialog.showSaveDialog({ title: "Export CSV", buttonLabel: "Export", filters: [{ name: "CSV", extensions: ["csv"] }] })
+    if (!exportPath.canceled) {
+      await persistentState.exportCSV(exportPath.filePath)
+      shell.showItemInFolder(exportPath.filePath)
+    }
+  },
   openPage: (page: "history" | "settings") => windowManager.openOrShowPage(pages[page]),
   closePage: (pageId: string) => windowManager.closeWindow(pageId),
 } satisfies { [key in typeof ipcPushChannels[number]]: (...args: any[]) => any }
