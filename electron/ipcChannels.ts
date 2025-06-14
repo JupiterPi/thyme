@@ -5,10 +5,12 @@ export const ipcPushChannels = [
     "loadMockData",
     "openJSON",
     "exportCSV",
+    "setTimelineDay",
     "openPage",
     "closePage"
 ] as const
 
 export const ipcPullChannels = [
-    "state"
+    "state",
+    "timelineDay"
 ] as const

@@ -2,7 +2,7 @@ import { useContext, useState } from "react"
 import { StateContext } from "./main"
 import dateFormat from "dateformat"
 import { mergeThreshold, TimeEntry } from "../electron/types"
-import { getDuration, midnight, pad2, useEphemeralState } from "./util"
+import { formatOnlyDate, getDuration, midnight, pad2, useEphemeralState } from "./util"
 import classNames from "classnames"
 import ipc from "./ipc"
 import { isDev } from "./buildInfo"
@@ -13,7 +13,6 @@ export function History() {
     const [expandedDayIndex, setExpandedDayIndex] = useState<number | null>(null)
     const [expandedId, setExpandedId] = useState<string | null>(state.timeEntries[0]?.id ?? null)
 
-    const formatOnlyDate = (date: Date) => `${dateFormat(date, "DDDD") /* (e.g. "today") */}, ${date.toLocaleDateString()}`
     const timeEntriesGrouped = Object.values(Object.groupBy(state.timeEntries.slice().reverse(), ({startTime}) => formatOnlyDate(startTime))) as TimeEntry[][]
 
     const [confirmingDeleteAll, setConfirmingDeleteAll] = useEphemeralState(false, 2000)
@@ -41,7 +40,7 @@ export function History() {
                                 </div>
                                 {/* "-> entries", "-> timeline" buttons */}
                                 <div className="_button inline-block text-sm" onClick={() => setExpandedDayIndex(expandedDayIndex === dayIndex ? null : dayIndex)}>{expandedDayIndex !== dayIndex ? <span>&rarr;</span> : <span>&times;</span>} entries</div>
-                                <div className="_button inline-block text-sm" onClick={() => /* ipc.openTimeline(entries[0]!.id) */ {}}>&rarr; timeline</div>
+                                <div className="_button inline-block text-sm" onClick={() => {ipc.setTimelineDay(formatOnlyDate(entries[0]!.startTime)); ipc.openPage("timeline")}}>&rarr; timeline</div>
                             </div>
 
                             {/* time entries */}

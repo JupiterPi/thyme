@@ -1,3 +1,4 @@
+import dateFormat from "dateformat"
 import { useState } from "react"
 
 export function getDuration(a: Date, b: Date) {
@@ -28,4 +29,12 @@ export function useEphemeralState<T>(initialValue: T, timeout: number): [T, (val
     setTimeoutReference(setTimeout(() => setStateInternal(initialValue), timeout))
   }
   return [state, setState]
+}
+
+export function formatOnlyDate(date: Date) {
+  return `${dateFormat(date, "DDDD") /* (e.g. "today") */}, ${date.toLocaleDateString()}`
+}
+
+export function getFractionalHours(date: Date) {
+  return date.getHours() + (date.getMinutes() / 60)
 }

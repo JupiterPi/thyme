@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url"
 import path from "node:path"
 import { TrayIcon } from "./trayIcon"
 import { PersistentState } from "./persistentState"
-import { first, Observable } from "rxjs"
+import { BehaviorSubject, filter, first, Observable } from "rxjs"
 import fs from "node:fs"
 import { ipcPullChannels, ipcPushChannels } from "./ipcChannels"
 import { pages, WindowManager } from "./windowManager"
@@ -87,6 +87,8 @@ function toggleActive() {
   })
 }
 
+const timelineDay$ = new BehaviorSubject<string | null>(null)
+
 export const PushIPC = {
   toggleActive: () => toggleActive(),
   reduceTimeEntries: (...actions: TimeEntriesAction[]) => persistentState.reduceTimeEntries(actions),
@@ -100,10 +102,12 @@ export const PushIPC = {
       shell.showItemInFolder(exportPath.filePath)
     }
   },
-  openPage: (page: "history" | "settings") => windowManager.openOrShowPage(pages[page]),
+  setTimelineDay: (date: string) => timelineDay$.next(date),
+  openPage: (page: "history" | "timeline" | "settings") => windowManager.openOrShowPage(pages[page]),
   closePage: (pageId: string) => windowManager.closeWindow(pageId),
 } satisfies { [key in typeof ipcPushChannels[number]]: (...args: any[]) => any }
 
-export const PullIPC = {
+export const PullIPC: { [key in typeof ipcPullChannels[number]]: Observable<any> } = {
   state: persistentState.getState(),
-} satisfies { [key in typeof ipcPullChannels[number]]: Observable<any> }
+  timelineDay: timelineDay$.pipe(filter(day => day !== null)),
+}

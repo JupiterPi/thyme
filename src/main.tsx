@@ -9,12 +9,14 @@ import { nullState, State } from "../electron/types"
 import logo from "./assets/icon.svg"
 import { Settings } from "./Settings"
 import { isDev } from "./buildInfo"
+import { Timeline } from "./Timeline"
 
 const pageId = window.location.search.startsWith("?pageId=") ? window.location.search.slice("?pageId=".length) : ""
 
 const pages: { id: string, title?: string, component: JSX.Element }[] = [
   { id: "dashboard", title: undefined, component: <Dashboard /> },
   { id: "history", title: "History", component: <History /> },
+  { id: "timeline", title: "Timeline", component: <Timeline /> },
   { id: "settings", title: "About", component: <Settings /> },
 ]
 const page = pages.find(page => page.id === (pageId.length > 0 ? pageId : "dashboard")) ?? { id: "", title: undefined, component: <div>not found</div> }

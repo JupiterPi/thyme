@@ -6,7 +6,8 @@ import url from "url"
 export type Page = { id: string, width: number, height: number }
 export const pages: Record<string, Page> = {
   dashboard: { id: "", width: 250, height: 375 },
-  history: { id: "history", width: 460, height: 600 },
+  history: { id: "history", width: 500, height: 600 },
+  timeline: { id: "timeline", width: 500, height: 800 },
   settings: { id: "settings", width: 300, height: 350 },
 }
 
@@ -86,6 +87,7 @@ export class WindowManager {
         })
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public sendAll(channel: string, ...args: any[]) {
         for (const { window } of this.windows) {
             window.webContents.send(channel, ...args)
