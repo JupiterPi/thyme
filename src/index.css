@@ -23,7 +23,7 @@ body {
     @apply bg-green-300 p-3 rounded-xl border-1 border-green-400;
 }
 ._button {
-    @apply bg-green-300 py-0.5 px-1.5 rounded-lg font-medium border-1 border-green-600 cursor-pointer transition-[background] duration-100 hover:bg-green-400;
+    @apply bg-green-300 py-0.5 px-1.5 rounded-lg font-medium border-1 border-green-600 cursor-pointer transition-[background] duration-100 hover:bg-green-400 focus:outline-none focus:bg-green-400;
 }
 /* scrollbar */
 

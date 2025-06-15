@@ -1,7 +1,7 @@
 import { useContext, useState } from "react"
 import { StateContext } from "./main"
 import dateFormat from "dateformat"
-import { mergeThreshold, TimeEntry } from "../electron/types"
+import { mergeThreshold, Note, TimeEntry } from "../electron/types"
 import { formatOnlyDate, getDuration, midnight, pad2, useEphemeralState } from "./util"
 import classNames from "classnames"
 import ipc from "./ipc"
@@ -43,9 +43,10 @@ export function History() {
                                 <div className="_button inline-block text-sm" onClick={() => {ipc.setTimelineDay(formatOnlyDate(entries[0]!.startTime)); ipc.openPage("timeline")}}>&rarr; timeline</div>
                             </div>
 
-                            {/* time entries */}
-                            {expandedDayIndex === dayIndex && <div className="pt-2">
+                            {/* time entries, notes */}
+                            {expandedDayIndex === dayIndex && <div className="pt-2 flex flex-col gap-4">
                                 <TimeEntries entries={entries} expandedId={expandedId} setExpandedId={setExpandedId} />
+                                <Notes notes={state.notes} />
                             </div>}
                         </div>
                     )
@@ -94,6 +95,24 @@ function TimeEntries({ entries, expandedId, setExpandedId }: { entries: TimeEntr
                     : <PauseCollapsed key={pauseElementId} previousEntry={previousEntry} nextEntry={entry} onExpand={() => setExpandedId(pauseElementId)} />}
             </>
         })}
+    </div>
+}
+
+function Notes({ notes }: { notes: Note[] }) {
+    const [expandedId, setExpandedId] = useState<string | null>(null)
+    return <div className="flex flex-col gap-2 items-center">
+        {notes.length === 0 && <div className="text-green-700">No notes</div>}
+        {notes.map(note => (
+            <div className="flex flex-col gap-0 items-center" key={note.id} onMouseEnter={() => setExpandedId(note.id)} onMouseLeave={() => setExpandedId(null)}>
+                <div className="_container bg-gray-200! border-gray-400! p-1.5! text-sm text-gray-700">
+                    <span className="font-mono text-gray-600 mr-2">{dateFormat(note.time, "HH:MM")}</span>
+                    <span>{note.text}</span>
+                </div>
+                {expandedId === note.id && <div className="_container bg-gray-200! border-gray-400! p-1! w-fit! border-t-transparent! rounded-t-[0]!">
+                    <div className="_button" onClick={() => ipc.reduceNotes({ action: "delete", id: note.id })}>delete</div>
+                </div>}
+            </div>
+        ))}
     </div>
 }
 

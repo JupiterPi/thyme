@@ -1,5 +1,5 @@
 import dateFormat from "dateformat"
-import { pad2 } from "./util"
+import { pad2, useEphemeralState } from "./util"
 import icon from "./assets/icon.svg"
 import classNames from "classnames"
 import { useContext, useEffect, useState } from "react"
@@ -21,7 +21,7 @@ export function Dashboard() {
             setDurationSeconds(d => d + 1)
         }, 1000)
         return () => clearInterval(interval)
-    }, [isActive])
+    }, [isActive, activeStartTime])
 
     const duration = isActive
         ? { hours: Math.floor(durationSeconds / (60*60)), minutes: Math.floor((durationSeconds % (60*60)) / 60), seconds: durationSeconds % 60 }
@@ -33,6 +33,14 @@ export function Dashboard() {
             setIsUpdateAvailable(latestVersion !== version)
         })
     }, [])
+
+    const [noteInput, setNoteInput] = useState("")
+    const [showNoteInputSuccessMessage, setShowNoteInputSuccessMessage] = useEphemeralState(false, 1000)
+    const submitNote = () => {
+        ipc.reduceNotes({ action: "create", note: { text: noteInput, time: new Date() } })
+        setNoteInput("")
+        setShowNoteInputSuccessMessage(true)
+    }
 
     return <>
 
@@ -60,6 +68,19 @@ export function Dashboard() {
                     {pad2(duration.seconds)}
                 </div>
             </div>
+        </div>
+
+        {/* quick add note */}
+        <div className="flex gap-1 w-43">
+            <input
+                disabled={!isActive}
+                className={classNames("py-0.5 px-1.5 border border-green-400 bg-green-300 focus:border-1.5 focus:outline-none rounded-md p-2 flex-1 w-full font-regular", { "text-center": noteInput.length === 0, "grayscale-100": !isActive })}
+                placeholder={showNoteInputSuccessMessage ? "Added" : "Add a Note"}
+                value={noteInput}
+                onChange={e => setNoteInput(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") submitNote() }}
+            />
+            {noteInput.length > 0 && <button className="_button" onClick={submitNote}>Note</button>}
         </div>
 
         {/* navigation buttons */}

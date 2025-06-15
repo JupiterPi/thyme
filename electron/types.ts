@@ -1,11 +1,13 @@
 export type State = {
     activeStartTime: Date | null,
     timeEntries: TimeEntry[],
+    notes: Note[],
 }
 
 export const nullState = {
     activeStartTime: null,
     timeEntries: [],
+    notes: [],
 }
 
 export type TimeEntry = {
@@ -23,6 +25,23 @@ export type TimeEntriesAction = {
     entry: TimeEntry,
 } | {
     type: "deleteEntry",
+    id: string,
+}
+
+export type Note = {
+    id: string,
+    time: Date,
+    text: string,
+}
+
+export type NotesAction = {
+    action: "create",
+    note: Omit<Note, "id">,
+} | {
+    action: "update",
+    note: Note,
+} | {
+    action: "delete",
     id: string,
 }
 

@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto"
 import { PathLike } from "node:fs"
 import fs from "node:fs/promises"
 import { exists, getDuration, pad2, parseDateReviver } from "./util"
-import { mergeThreshold, State, TimeEntriesAction, TimeEntry } from "./types"
+import { mergeThreshold, Note, NotesAction, nullState, State, TimeEntriesAction, TimeEntry } from "./types"
 import dateFormat from "dateformat"
 
 export class PersistentState {
@@ -81,9 +81,35 @@ export class PersistentState {
             resolve()
         })
     }
+    
+    // todo: modernize time entries handling (remove manual actions and only leave reducer, make addTimeEntry type an Omit<...> type)
 
-    private state$ = combineLatest([this.activeStartTime$, this.timeEntries$]).pipe(
-        map(([activeStartTime, timeEntries]) => ({ activeStartTime, timeEntries } satisfies State)),
+    private notes$ = new BehaviorSubject<Note[]>([])
+    public getNotes() {
+        return this.notes$.asObservable()
+    }
+
+    public reduceNotes(actions: NotesAction[]) {
+        return new Promise<void>(resolve => {
+            this.notes$.pipe(first()).subscribe(notes => {
+                const updatedNotes = actions.reduce(((notes: Note[], action: NotesAction) => {
+                    switch (action.action) {
+                        case "create":
+                            return [...notes, { id: randomUUID(), ...action.note }]
+                        case "update":
+                            return notes.map(note => note.id === action.note.id ? action.note : note)
+                        case "delete":
+                            return notes.filter(note => note.id !== action.id)
+                    }
+                }), notes)
+                this.notes$.next(updatedNotes)
+                resolve()
+            })
+        })
+    }
+
+    private state$ = combineLatest([this.activeStartTime$, this.timeEntries$, this.notes$]).pipe(
+        map(([activeStartTime, timeEntries, notes]) => ({ activeStartTime, timeEntries, notes } satisfies State)),
         shareReplay(1) /* like BehaviorSubject */
     ) as Observable<State>
 
@@ -113,6 +139,7 @@ export class PersistentState {
         this.readStateFromFile().then(state => {
             this.activeStartTime$.next(state.activeStartTime)
             this.timeEntries$.next(state.timeEntries)
+            this.notes$.next(state.notes)
 
             this.state$.pipe(skip(1), auditTime(500), /* write state when it's settled */).subscribe(state => this.writeStateToFile(state))
         })
@@ -123,9 +150,8 @@ export class PersistentState {
             const file = await fs.readFile(this.persistentFile, "utf-8")
             return JSON.parse(file, parseDateReviver) as State
         } else {
-            const state = { activeStartTime: null, timeEntries: [] }
-            await this.writeStateToFile(state)
-            return state
+            await this.writeStateToFile(nullState)
+            return nullState
         }
     }
 

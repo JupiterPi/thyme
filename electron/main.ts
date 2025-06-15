@@ -8,7 +8,7 @@ import { BehaviorSubject, filter, first, Observable } from "rxjs"
 import fs from "node:fs"
 import { ipcPullChannels, ipcPushChannels } from "./ipcChannels"
 import { pages, WindowManager } from "./windowManager"
-import { TimeEntriesAction } from "./types"
+import { NotesAction, TimeEntriesAction } from "./types"
 
 export const __dirname = path.dirname(fileURLToPath(import.meta.url))
 process.env.APP_ROOT = path.join(__dirname, "..")
@@ -93,6 +93,7 @@ export const PushIPC = {
   toggleActive: () => toggleActive(),
   reduceTimeEntries: (...actions: TimeEntriesAction[]) => persistentState.reduceTimeEntries(actions),
   deleteAllTimeEntries: () => persistentState.deleteAllTimeEntries(),
+  reduceNotes: (...actions: NotesAction[]) => persistentState.reduceNotes(actions),
   loadMockData: () => persistentState.loadMockData(),
   openJSON: () => shell.showItemInFolder(persistentStateFile),
   exportCSV: async () => {
