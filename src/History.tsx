@@ -23,7 +23,8 @@ export function History() {
                 <div className="flex gap-2">
                     {/* open raw JSON / export CSV */}
                     <div className="_button text-sm" onClick={() => ipc.openJSON()}>open raw JSON</div>
-                    <div className="_button text-sm" onClick={() => ipc.exportCSV()}>export CSV</div>
+                    <div className="_button text-sm" onClick={() => ipc.exportCSV("byDay")}>export CSV (by day)</div>
+                    <div className="_button text-sm" onClick={() => ipc.exportCSV("allEntries")}>export CSV (all entries)</div>
                 </div>
                 {/* time entries list */}
                 {timeEntriesGrouped.map((entries, dayIndex) => {

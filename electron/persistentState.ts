@@ -5,6 +5,7 @@ import fs from "node:fs/promises"
 import { exists, getDuration, pad2, parseDateReviver } from "./util"
 import { mergeThreshold, Note, NotesAction, nullState, State, TimeEntriesAction, TimeEntry } from "./types"
 import dateFormat from "dateformat"
+import { formatOnlyDate } from "../src/util"
 
 export class PersistentState {
     // state
@@ -168,16 +169,32 @@ export class PersistentState {
         })
     }
 
-    public async exportCSV(file: string) {
+    public async exportCSV(file: string, type: "byDay" | "allEntries") {
         return new Promise<void>(resolve => {
-            this.timeEntries$.pipe(first()).subscribe(entries => {
-                const csv = entries.map(entry => {
-                    const startTime = dateFormat(entry.startTime, "yyyy-mm-dd HH:MM:ss")
-                    const endTime = dateFormat(entry.endTime, "yyyy-mm-dd HH:MM:ss")
-                    const duration = getDuration(entry.startTime, entry.endTime)
-                    const durationStr = `${pad2(duration.hours)}:${pad2(duration.minutes)}`
-                    return [startTime, endTime, durationStr].join(";")
-                }).join("\n")
+            this.state$.pipe(first()).subscribe(({ timeEntries: entries, notes }) => {
+                const csv = (() => {
+                    if (type === "byDay") {
+                        const entriesByDay = Object.values(Object.groupBy(entries.slice(), ({startTime}) => formatOnlyDate(startTime))) as TimeEntry[][]
+                        return entriesByDay.map(dailyEntries => {
+                            const date = dateFormat(dailyEntries[0].startTime, "yyyy-mm-dd")
+                            const totalTime = dailyEntries.reduce((total, entry) => total + entry.endTime.getTime() - entry.startTime.getTime(), 0)
+                            const totalTimeDuration = getDuration(new Date(0), new Date(totalTime))
+                            const totalTimeStr = `${pad2(totalTimeDuration.hours)}:${pad2(totalTimeDuration.minutes)}`
+                            const notesStr = notes.filter(note => formatOnlyDate(note.time) === formatOnlyDate(dailyEntries[0].startTime))
+                                .map(note => note.text.replace(/;/g, ",").replace(/\n/, "  ")).join(" -- ")
+                            return [date, totalTimeStr, notesStr].join(";")
+                        }).join("\n")
+                    } else if (type === "allEntries") {
+                        return entries.map(entry => {
+                            const startTime = dateFormat(entry.startTime, "yyyy-mm-dd HH:MM:ss")
+                            const endTime = dateFormat(entry.endTime, "yyyy-mm-dd HH:MM:ss")
+                            const duration = getDuration(entry.startTime, entry.endTime)
+                            const durationStr = `${pad2(duration.hours)}:${pad2(duration.minutes)}`
+                            return [startTime, endTime, durationStr].join(";")
+                        }).join("\n")
+                    }
+                    throw Error("Invalid export type")
+                })()
                 fs.writeFile(file, csv).then(resolve)
             })
         })

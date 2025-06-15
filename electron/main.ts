@@ -96,10 +96,10 @@ export const PushIPC = {
   reduceNotes: (...actions: NotesAction[]) => persistentState.reduceNotes(actions),
   loadMockData: () => persistentState.loadMockData(),
   openJSON: () => shell.showItemInFolder(persistentStateFile),
-  exportCSV: async () => {
+  exportCSV: async (type: "byDay" | "allEntries") => {
     const exportPath = await dialog.showSaveDialog({ title: "Export CSV", buttonLabel: "Export", filters: [{ name: "CSV", extensions: ["csv"] }] })
     if (!exportPath.canceled) {
-      await persistentState.exportCSV(exportPath.filePath)
+      await persistentState.exportCSV(exportPath.filePath, type)
       shell.showItemInFolder(exportPath.filePath)
     }
   },
