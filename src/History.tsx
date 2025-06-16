@@ -47,7 +47,7 @@ export function History() {
                             {/* time entries, notes */}
                             {expandedDayIndex === dayIndex && <div className="pt-2 flex flex-col gap-4">
                                 <TimeEntries entries={entries} expandedId={expandedId} setExpandedId={setExpandedId} />
-                                <Notes notes={state.notes} />
+                                <Notes notes={state.notes.filter(note => formatOnlyDate(note.time) === formatOnlyDate(entries[0]!.startTime))} />
                             </div>}
                         </div>
                     )
