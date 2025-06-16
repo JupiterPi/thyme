@@ -11,7 +11,6 @@ export class PersistentState {
     // state
 
     private activeStartTime$ = new BehaviorSubject<Date | null>(null)
-
     public getActiveStartTime() {
         return this.activeStartTime$.asObservable()
     }
@@ -21,7 +20,6 @@ export class PersistentState {
     }
 
     private timeEntries$ = new BehaviorSubject<TimeEntry[]>([])
-
     public getTimeEntries() {
         return this.timeEntries$.asObservable()
     }
@@ -30,12 +28,12 @@ export class PersistentState {
         return new Promise<void>(resolve => {
             this.timeEntries$.pipe(first()).subscribe(timeEntries => {
                 const updatedTimeEntries = actions.reduce(((timeEntries: TimeEntry[], action: TimeEntriesAction) => {
-                    switch (action.type) {
-                        case "createEntry":
-                            return [...timeEntries, { id: randomUUID(), startTime: action.startTime, endTime: action.endTime }]
-                        case "updateEntry":
+                    switch (action.action) {
+                        case "create":
+                            return [...timeEntries, { id: randomUUID(), ...action.entry }]
+                        case "update":
                             return timeEntries.map(timeEntry => timeEntry.id === action.entry.id ? action.entry : timeEntry)
-                        case "deleteEntry":
+                        case "delete":
                             return timeEntries.filter(timeEntry => timeEntry.id !== action.id)
                     }
                 }), timeEntries)
@@ -44,46 +42,6 @@ export class PersistentState {
             })
         })
     }
-
-    public addTimeEntry(startTime: Date, endTime: Date) {
-        return new Promise<TimeEntry>(resolve => {
-            const newTimeEntry = { id: randomUUID(), startTime, endTime }
-            this.timeEntries$.pipe(first()).subscribe(timeEntries => {
-                const updatedEntries = [...timeEntries, newTimeEntry]
-                this.timeEntries$.next(normalizeTimeEntries(updatedEntries))
-                resolve(newTimeEntry)
-            })
-        })
-    }
-
-    public updateTimeEntry(updatedTimeEntry: TimeEntry) {
-        return new Promise<TimeEntry>(resolve => {
-            this.timeEntries$.pipe(first()).subscribe(timeEntries => {
-                const updatedEntries = timeEntries.map(timeEntry => timeEntry.id === updatedTimeEntry.id ? updatedTimeEntry : timeEntry)
-                this.timeEntries$.next(normalizeTimeEntries(updatedEntries))
-                resolve(updatedTimeEntry)
-            })
-        })
-    }
-
-    public deleteTimeEntry(id: string) {
-        return new Promise<void>(resolve => {
-            this.timeEntries$.pipe(first()).subscribe(timeEntries => {
-                const updatedEntries = timeEntries.filter(timeEntry => timeEntry.id !== id)
-                this.timeEntries$.next(updatedEntries)
-                resolve()
-            })
-        })
-    }
-
-    public deleteAllTimeEntries() {
-        return new Promise<void>(resolve => {
-            this.timeEntries$.next([])
-            resolve()
-        })
-    }
-    
-    // todo: modernize time entries handling (remove manual actions and only leave reducer, make addTimeEntry type an Omit<...> type)
 
     private notes$ = new BehaviorSubject<Note[]>([])
     public getNotes() {
@@ -106,6 +64,14 @@ export class PersistentState {
                 this.notes$.next(updatedNotes)
                 resolve()
             })
+        })
+    }
+
+    public deleteAllTimeEntriesAndNotes() {
+        return new Promise<void>(resolve => {
+            this.timeEntries$.next([])
+            this.notes$.next([])
+            resolve()
         })
     }
 

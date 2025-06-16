@@ -17,14 +17,13 @@ export type TimeEntry = {
 }
 
 export type TimeEntriesAction = {
-    type: "createEntry",
-    startTime: Date,
-    endTime: Date,
+    action: "create",
+    entry: Omit<TimeEntry, "id">,
 } | {
-    type: "updateEntry",
+    action: "update",
     entry: TimeEntry,
 } | {
-    type: "deleteEntry",
+    action: "delete",
     id: string,
 }
 

@@ -58,7 +58,7 @@ export function History() {
                 <div className="flex flex-col items-center gap-2">
                     {state.timeEntries.length > 0 && <div className="_button text-sm" onClick={() => {
                         if (confirmingDeleteAll) {
-                            ipc.deleteAllTimeEntries()
+                            ipc.deleteAllTimeEntriesAndNotes()
                             setConfirmingDeleteAll(false)
                         } else {
                             setConfirmingDeleteAll(true)
@@ -150,21 +150,21 @@ function TimeEntryExpanded({ timeEntry, previousEntry, nextEntry }: { timeEntry:
         }
     }
     const saveChanges = () => {
-        ipc.reduceTimeEntries({ type: "updateEntry", entry: { ...timeEntry, startTime, endTime } })
+        ipc.reduceTimeEntries({ action: "update", entry: { ...timeEntry, startTime, endTime } })
         setEditingField(null)
     }
 
     const insertPause = () => {
         const [pauseStart, pauseEnd] = splitTimeEquallyWithinMergeThreshold(timeEntry.startTime, timeEntry.endTime)
         ipc.reduceTimeEntries(
-            { type: "deleteEntry", id: timeEntry.id },
-            { type: "createEntry", startTime: timeEntry.startTime, endTime: pauseStart },
-            { type: "createEntry", startTime: pauseEnd, endTime: timeEntry.endTime },
+            { action: "delete", id: timeEntry.id },
+            { action: "create", entry: { startTime: timeEntry.startTime, endTime: pauseStart } },
+            { action: "create", entry: { startTime: pauseEnd, endTime: timeEntry.endTime } },
         )
     }
 
     const deleteEntry = () => {
-        ipc.reduceTimeEntries({ type: "deleteEntry", id: timeEntry.id })
+        ipc.reduceTimeEntries({ action: "delete", id: timeEntry.id })
     }
 
     const duration = getDuration(startTime, endTime)
@@ -225,14 +225,14 @@ function PauseExpanded({ previousEntry, nextEntry }: { previousEntry?: TimeEntry
 
     const insertEntry = () => {
         const [entryStart, entryEnd] = splitTimeEquallyWithinMergeThreshold(previousTime, nextTime)
-        ipc.reduceTimeEntries({ type: "createEntry", startTime: entryStart, endTime: entryEnd })
+        ipc.reduceTimeEntries({ action: "create", entry: { startTime: entryStart, endTime: entryEnd } })
     }
 
     const deletePause = () => {
         if (nextEntry !== undefined) {
-            ipc.reduceTimeEntries({ type: "updateEntry", entry: { ...nextEntry, startTime: previousTime } })
+            ipc.reduceTimeEntries({ action: "update", entry: { ...nextEntry, startTime: previousTime } })
         } else {
-            ipc.reduceTimeEntries({ type: "updateEntry", entry: { ...previousEntry!, endTime: nextTime, } })
+            ipc.reduceTimeEntries({ action: "update", entry: { ...previousEntry!, endTime: nextTime } })
         }
     }
 

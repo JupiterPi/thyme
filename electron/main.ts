@@ -82,7 +82,7 @@ function toggleActive() {
       persistentState.setActiveStartTime(new Date())
     } else {
       persistentState.setActiveStartTime(null)
-      persistentState.addTimeEntry(activeStartTime, new Date())
+      persistentState.reduceTimeEntries([{ action: "create", entry: { startTime: activeStartTime, endTime: new Date() } }])
     }
   })
 }
@@ -92,8 +92,8 @@ const timelineDay$ = new BehaviorSubject<string | null>(null)
 export const PushIPC = {
   toggleActive: () => toggleActive(),
   reduceTimeEntries: (...actions: TimeEntriesAction[]) => persistentState.reduceTimeEntries(actions),
-  deleteAllTimeEntries: () => persistentState.deleteAllTimeEntries(),
   reduceNotes: (...actions: NotesAction[]) => persistentState.reduceNotes(actions),
+  deleteAllTimeEntriesAndNotes: () => persistentState.deleteAllTimeEntriesAndNotes(),
   loadMockData: () => persistentState.loadMockData(),
   openJSON: () => shell.showItemInFolder(persistentStateFile),
   exportCSV: async (type: "byDay" | "allEntries") => {

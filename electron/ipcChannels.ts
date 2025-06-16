@@ -1,8 +1,8 @@
 export const ipcPushChannels = [
     "toggleActive",
     "reduceTimeEntries",
-    "deleteAllTimeEntries",
     "reduceNotes",
+    "deleteAllTimeEntriesAndNotes",
     "loadMockData",
     "openJSON",
     "exportCSV",
