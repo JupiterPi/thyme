@@ -51,6 +51,7 @@ export function Timeline() {
                         <span>{note.text}</span>
                     </div>
                 ))}
+                {notes.length === 0 && <div className="text-green-700 px-3 py-2">No notes</div>}
             </div>
         </div>
     </>
