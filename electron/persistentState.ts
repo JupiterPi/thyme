@@ -149,7 +149,8 @@ export class PersistentState {
     private async readStateFromFile() {
         if (await exists(this.persistentFile)) {
             const file = await fs.readFile(this.persistentFile, "utf-8")
-            return JSON.parse(file, parseDateReviver) as State
+            const state = JSON.parse(file, parseDateReviver)
+            return { ...nullState, ...state } as State
         } else {
             await this.writeStateToFile(nullState)
             return nullState
