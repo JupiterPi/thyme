@@ -8,7 +8,7 @@ import { BehaviorSubject, filter, first, Observable } from "rxjs"
 import fs from "node:fs"
 import { ipcPullChannels, ipcPushChannels } from "./ipcChannels"
 import { pages, WindowManager } from "./windowManager"
-import { NotesAction, TimeEntriesAction } from "./types"
+import { Kimai, NotesAction, TimeEntriesAction } from "./types"
 
 export const __dirname = path.dirname(fileURLToPath(import.meta.url))
 process.env.APP_ROOT = path.join(__dirname, "..")
@@ -94,6 +94,7 @@ export const PushIPC = {
   reduceTimeEntries: (...actions: TimeEntriesAction[]) => persistentState.reduceTimeEntries(actions),
   reduceNotes: (...actions: NotesAction[]) => persistentState.reduceNotes(actions),
   deleteAllTimeEntriesAndNotes: () => persistentState.deleteAllTimeEntriesAndNotes(),
+  setKimai: (kimai: Kimai) => persistentState.setKimai(kimai),
   loadMockData: () => persistentState.loadMockData(),
   openJSON: () => shell.showItemInFolder(persistentStateFile),
   exportCSV: async (type: "byDay" | "allEntries") => {
@@ -104,7 +105,7 @@ export const PushIPC = {
     }
   },
   setTimelineDay: (date: string) => timelineDay$.next(date),
-  openPage: (page: "history" | "timeline" | "settings") => windowManager.openOrShowPage(pages[page]),
+  openPage: (page: "history" | "timeline" | "settings" | "kimaiConfiguration" | "kimai") => windowManager.openOrShowPage(pages[page]),
   closePage: (pageId: string) => windowManager.closeWindow(pageId),
 } satisfies { [key in typeof ipcPushChannels[number]]: (...args: any[]) => any }
 

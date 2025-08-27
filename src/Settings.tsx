@@ -1,8 +1,12 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { version } from "./buildInfo";
 import { getLatestVersion } from "./updates";
+import ipc from "./ipc";
+import { StateContext } from "./main";
 
 export function Settings() {
+    const state = useContext(StateContext)
+
     const [latestVersion, setLatestVersion] = useState<string | undefined>(undefined);
     useEffect(() => {
         getLatestVersion().then(version => setLatestVersion(version)).catch(e => console.error(e))
@@ -22,6 +26,9 @@ export function Settings() {
             </div>
             <p>Visit the project on GitHub: <br /> <a href="https://github.com/JupiterPi/thyme" target="_blank" className="text-green-500">JupiterPi/thyme</a></p>
             <p>Made with ❤️ by <a href="https://jupiterpi.de" target="_blank" className="text-green-500">JupiterPi</a></p>
+
+            {/* enable Kimai */}
+            {!state.kimai.enabled && <button className="_button" onClick={() => ipc.openPage("kimaiConfiguration")}>Enable Kimai integration</button>}
         </div>
     )
 }

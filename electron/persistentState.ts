@@ -3,14 +3,14 @@ import { randomUUID } from "node:crypto"
 import { PathLike } from "node:fs"
 import fs from "node:fs/promises"
 import { exists, getDuration, pad2, parseDateReviver } from "./util"
-import { mergeThreshold, Note, NotesAction, nullState, State, TimeEntriesAction, TimeEntry } from "./types"
+import { Kimai, mergeThreshold, Note, NotesAction, nullState, State, TimeEntriesAction, TimeEntry } from "./types"
 import dateFormat from "dateformat"
 import { formatOnlyDate } from "../src/util"
 
 export class PersistentState {
     // state
 
-    private activeStartTime$ = new BehaviorSubject<Date | null>(null)
+    private activeStartTime$ = new BehaviorSubject<Date | null>(nullState.activeStartTime)
     public getActiveStartTime() {
         return this.activeStartTime$.asObservable()
     }
@@ -19,7 +19,7 @@ export class PersistentState {
         this.activeStartTime$.next(startTime)
     }
 
-    private timeEntries$ = new BehaviorSubject<TimeEntry[]>([])
+    private timeEntries$ = new BehaviorSubject<TimeEntry[]>(nullState.timeEntries)
     public getTimeEntries() {
         return this.timeEntries$.asObservable()
     }
@@ -43,7 +43,7 @@ export class PersistentState {
         })
     }
 
-    private notes$ = new BehaviorSubject<Note[]>([])
+    private notes$ = new BehaviorSubject<Note[]>(nullState.notes)
     public getNotes() {
         return this.notes$.asObservable()
     }
@@ -75,8 +75,17 @@ export class PersistentState {
         })
     }
 
-    private state$ = combineLatest([this.activeStartTime$, this.timeEntries$, this.notes$]).pipe(
-        map(([activeStartTime, timeEntries, notes]) => ({ activeStartTime, timeEntries, notes } satisfies State)),
+    private kimai$ = new BehaviorSubject<Kimai>(nullState.kimai)
+    public getKimai() {
+        return this.kimai$.asObservable()
+    }
+
+    public setKimai(kimai: Kimai) {
+        this.kimai$.next(kimai)
+    }
+
+    private state$ = combineLatest([this.activeStartTime$, this.timeEntries$, this.notes$, this.kimai$]).pipe(
+        map(([activeStartTime, timeEntries, notes, kimai]) => ({ activeStartTime, timeEntries, notes, kimai } satisfies State)),
         shareReplay(1) /* like BehaviorSubject */
     ) as Observable<State>
 
@@ -107,6 +116,7 @@ export class PersistentState {
             this.activeStartTime$.next(state.activeStartTime)
             this.timeEntries$.next(state.timeEntries)
             this.notes$.next(state.notes)
+            this.kimai$.next(state.kimai)
 
             this.state$.pipe(skip(1), auditTime(500), /* write state when it's settled */).subscribe(state => this.writeStateToFile(state))
         })

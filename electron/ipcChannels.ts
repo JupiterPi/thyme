@@ -3,6 +3,7 @@ export const ipcPushChannels = [
     "reduceTimeEntries",
     "reduceNotes",
     "deleteAllTimeEntriesAndNotes",
+    "setKimai",
     "loadMockData",
     "openJSON",
     "exportCSV",

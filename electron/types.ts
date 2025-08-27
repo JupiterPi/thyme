@@ -2,12 +2,17 @@ export type State = {
     activeStartTime: Date | null,
     timeEntries: TimeEntry[],
     notes: Note[],
+    kimai: Kimai,
 }
 
-export const nullState = {
+export const nullState: State = {
     activeStartTime: null,
     timeEntries: [],
     notes: [],
+    kimai: {
+        enabled: false,
+        connection: undefined,
+    },
 }
 
 export type TimeEntry = {
@@ -45,3 +50,11 @@ export type NotesAction = {
 }
 
 export const mergeThreshold = 1 * 60 * 1000
+
+export type Kimai = {
+    enabled: boolean,
+    connection: undefined | {
+        url: string,
+        authToken: string,
+    },
+}

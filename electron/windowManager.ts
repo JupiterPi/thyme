@@ -9,6 +9,8 @@ export const pages: Record<string, Page> = {
   history: { id: "history", width: 500, height: 600 },
   timeline: { id: "timeline", width: 500, height: 800 },
   settings: { id: "settings", width: 300, height: 350 },
+  kimaiConfiguration: { id: "kimaiConfiguration", width: 400, height: 260 },
+  kimai: { id: "kimai", width: 500, height: 600 },
 }
 
 export class WindowManager {
