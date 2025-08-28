@@ -10,7 +10,6 @@ export const nullState: State = {
     timeEntries: [],
     notes: [],
     kimai: {
-        enabled: false,
         connection: undefined,
     },
 }
@@ -52,9 +51,12 @@ export type NotesAction = {
 export const mergeThreshold = 1 * 60 * 1000
 
 export type Kimai = {
-    enabled: boolean,
     connection: undefined | {
         url: string,
         authToken: string,
     },
+}
+
+export function isEnabled(kimai: Kimai) {
+    return kimai.connection !== undefined
 }

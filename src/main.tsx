@@ -11,7 +11,6 @@ import { Settings } from "./Settings"
 import { isDev } from "./buildInfo"
 import { Timeline } from "./Timeline"
 import Kimai from "./Kimai"
-import KimaiConfiguration from "./KimaiConfiguration"
 
 const pageId = window.location.search.startsWith("?pageId=") ? window.location.search.slice("?pageId=".length) : ""
 
@@ -20,7 +19,6 @@ const pages: { id: string, title?: string, component: JSX.Element }[] = [
   { id: "history", title: "History", component: <History /> },
   { id: "timeline", title: "Timeline", component: <Timeline /> },
   { id: "settings", title: "About", component: <Settings /> },
-  { id: "kimaiConfiguration", title: "Kimai Configuration", component: <KimaiConfiguration /> },
   { id: "kimai", title: "Kimai", component: <Kimai /> },
 ]
 const page = pages.find(page => page.id === (pageId.length > 0 ? pageId : "dashboard")) ?? { id: "", title: undefined, component: <div>not found</div> }

@@ -105,7 +105,7 @@ export const PushIPC = {
     }
   },
   setTimelineDay: (date: string) => timelineDay$.next(date),
-  openPage: (page: "history" | "timeline" | "settings" | "kimaiConfiguration" | "kimai") => windowManager.openOrShowPage(pages[page]),
+  openPage: (page: "history" | "timeline" | "settings" | "kimai") => windowManager.openOrShowPage(pages[page]),
   closePage: (pageId: string) => windowManager.closeWindow(pageId),
 } satisfies { [key in typeof ipcPushChannels[number]]: (...args: any[]) => any }
 
