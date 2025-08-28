@@ -9,10 +9,11 @@ export const ipcPushChannels = [
     "exportCSV",
     "setTimelineDay",
     "openPage",
-    "closePage"
+    "closePage",
+    "getKimaiUsername",
 ] as const
 
 export const ipcPullChannels = [
     "state",
-    "timelineDay"
+    "timelineDay",
 ] as const

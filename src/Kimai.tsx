@@ -1,4 +1,4 @@
-import { useContext, useState } from "react"
+import { useContext, useEffect, useState } from "react"
 import { StateContext } from "./main"
 import classNames from "classnames"
 import ipc from "./ipc"
@@ -25,6 +25,15 @@ export default function Kimai() {
 function KimaiConnectionDialog() {
     const state = useContext(StateContext)
 
+    const [kimaiUsername, setKimaiUsername] = useState("")
+    useEffect(() => {
+        let ignore = false
+        ipc.getKimaiUsername().then(kimaiUsername => !ignore && setKimaiUsername(kimaiUsername ?? "..."))
+        return () => { ignore = true }
+    }, [])
+
+    const kimaiHostname = state.kimai.connection?.url.replace(/https?:\/\//, "").replace(/\/$/, "") ?? "..."
+
     const [edit, setEdit] = useState(false)
     const showEditDialog = edit || !isEnabled(state.kimai)
 
@@ -35,7 +44,12 @@ function KimaiConnectionDialog() {
                 {/* connected */}
                 <div className="flex gap-2 items-center">
                     <div className="bg-green-500 size-4 rounded-full"></div>
-                    <div>Connected to <span className="font-medium">{state.kimai.connection!.url}</span></div>
+                    <div>
+                        Connected as
+                        <span className="font-medium"> {kimaiUsername} </span>
+                        at
+                        <span className="font-medium"> {kimaiHostname}</span>
+                    </div>
                 </div>
                 <button className="_button" onClick={() => setEdit(true)}>Change Connection</button>
             </div>

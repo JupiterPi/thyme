@@ -9,6 +9,7 @@ import fs from "node:fs"
 import { ipcPullChannels, ipcPushChannels } from "./ipcChannels"
 import { pages, WindowManager } from "./windowManager"
 import { Kimai, NotesAction, TimeEntriesAction } from "./types"
+import { KimaiIntegration } from "./kimai/kimaiIntegration"
 
 export const __dirname = path.dirname(fileURLToPath(import.meta.url))
 process.env.APP_ROOT = path.join(__dirname, "..")
@@ -89,6 +90,11 @@ function toggleActive() {
 
 const timelineDay$ = new BehaviorSubject<string | null>(null)
 
+let kimaiIntegration: KimaiIntegration | null = null
+persistentState.getKimai().subscribe(kimai => {
+  kimaiIntegration = kimai.connection !== undefined ? new KimaiIntegration(kimai.connection.url, kimai.connection.authToken) : null
+})
+
 export const PushIPC = {
   toggleActive: () => toggleActive(),
   reduceTimeEntries: (...actions: TimeEntriesAction[]) => persistentState.reduceTimeEntries(actions),
@@ -107,6 +113,7 @@ export const PushIPC = {
   setTimelineDay: (date: string) => timelineDay$.next(date),
   openPage: (page: "history" | "timeline" | "settings" | "kimai") => windowManager.openOrShowPage(pages[page]),
   closePage: (pageId: string) => windowManager.closeWindow(pageId),
+  getKimaiUsername: async () => await kimaiIntegration?.getUsername()
 } satisfies { [key in typeof ipcPushChannels[number]]: (...args: any[]) => any }
 
 export const PullIPC: { [key in typeof ipcPullChannels[number]]: Observable<any> } = {
