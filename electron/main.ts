@@ -47,7 +47,7 @@ app.whenReady().then(() => {
   })
   Object.keys(PullIPC).forEach((channel) => {
     let lastValue: any
-    PullIPC[channel as keyof typeof PullIPC].subscribe(value => {
+    (PullIPC[channel as keyof typeof PullIPC] as Observable<any>).subscribe(value => {
       lastValue = value
       windowManager.sendAll(("listen__" + channel), value)
     })
@@ -116,7 +116,8 @@ export const PushIPC = {
   getKimaiUsername: async () => await kimaiIntegration?.getUsername()
 } satisfies { [key in typeof ipcPushChannels[number]]: (...args: any[]) => any }
 
-export const PullIPC: { [key in typeof ipcPullChannels[number]]: Observable<any> } = {
+export const PullIPC = {
+  // todo: update these with useObservable
   state: persistentState.getState(),
   timelineDay: timelineDay$.pipe(filter(day => day !== null)),
-}
+} satisfies { [key in typeof ipcPullChannels[number]]: Observable<any> }
