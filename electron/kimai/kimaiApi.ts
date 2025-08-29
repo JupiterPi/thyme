@@ -1,3 +1,7 @@
+import dateFormat from "dateformat"
+import { midnight } from "../util"
+import { Note, TimeEntry } from "../types"
+
 export class KimaiAPI {
     private url: string
     private authToken: string
@@ -9,7 +13,7 @@ export class KimaiAPI {
 
     // util
 
-    private async request<T>(method: "GET" | "POST", path: string, body?: unknown) {
+    private async request(method: "GET" | "POST" | "DELETE", path: string, body?: unknown) {
         const response = await fetch(this.url + path, {
             method,
             headers: {
@@ -21,15 +25,17 @@ export class KimaiAPI {
         if (!response.ok) {
             throw new Error(`Error fetching ${path}: ${response.statusText}`)
         }
-        return response.json() as T
+        return response
     }
 
-    private get<T>(path: string, body?: unknown) {
-        return this.request<T>("GET", path, body)
+    private async get<T>(path: string) {
+        return (await this.request("GET", path, undefined)).json() as T
     }
-
-    private post<T>(path: string, body?: unknown) {
-        return this.request<T>("POST", path, body)
+    private async post<T>(path: string, body?: unknown) {
+        return (await this.request("POST", path, body)).json() as T
+    }
+    private async delete(path: string) {
+        await this.request("DELETE", path, undefined)
     }
 
     // endpoints
@@ -37,4 +43,29 @@ export class KimaiAPI {
     public async fetchCurrentUser() {
         return await this.get<{ alias: string }>("/api/users/me")
     }
+
+    public async fetchThymeTimesheets(day: Date) {
+        const start = formatDate(midnight(day, false))
+        const end = formatDate(midnight(day, true))
+        return await this.get<{id: string}[]>(`/api/timesheets?begin=${start}&end=${end}&tags%5B%5D=thyme`)
+    }
+
+    public async createThymeTimesheet(projectId: number, activityId: number, entry: TimeEntry, notes: Note[]) {
+        return await this.post("/api/timesheets", {
+            project: projectId,
+            activity: activityId,
+            begin: formatDate(entry.startTime),
+            end: formatDate(entry.endTime),
+            description: notes.map(note => `${dateFormat(note.time, "HH:mm")}: ${note.text}`).join("\n"),
+            tags: ["thyme"].join(","),
+        })
+    }
+
+    public async deleteTimesheet(id: string) {
+        return await this.delete(`/api/timesheets/${id}`)
+    }
+}
+
+function formatDate(date: Date) {
+    return dateFormat(date, "yyyy-mm-dd") + "T" + dateFormat(date, "HH:MM:ss")
 }

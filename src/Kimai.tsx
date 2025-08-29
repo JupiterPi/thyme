@@ -2,8 +2,8 @@ import { useContext, useState } from "react"
 import { StateContext } from "./main"
 import classNames from "classnames"
 import ipc from "./ipc"
-import { isEnabled } from "../electron/types"
-import { pad2, useObservable } from "./util"
+import { isEnabled, nullState } from "../electron/types"
+import { pad2, useEphemeralState, useObservable } from "./util"
 
 export default function Kimai() {
     return <div className="flex flex-col gap-3 w-full">
@@ -87,7 +87,7 @@ function KimaiConnectionDialogEditable({ close: close }: { close: () => void }) 
     }
 
     const disableKimai = () => {
-        ipc.setKimai({ ...state.kimai, connection: undefined })
+        ipc.setKimai(nullState.kimai)
         ipc.closePage("kimai")
     }
 
@@ -116,11 +116,20 @@ function KimaiDays() {
 }
 
 function KimaiDay({ data }: { data: { date: Date, dayFormatted: string, duration: number, isUploaded: boolean } }) {
+    const [justUploaded, setJustUploaded] = useEphemeralState(false, 1000)
+    const [hovered, setHovered] = useState(false)
+
+    const upload = () => {
+        ipc.kimaiUploadEntriesForDay(data.date)
+        setJustUploaded(true)
+    }
+
     return <div className="flex gap-3 items-center">
         <div className="font-medium">
             {data.dayFormatted} <span> </span>
             ({`${pad2(Math.floor(data.duration / 1000 / 60 / 60))}:${pad2(Math.floor(data.duration / 1000 / 60) % 60)}h`})
         </div>
-        <button className="_button text-sm" onClick={() => ipc.kimaiUploadEntriesForDay(data.date)}>Upload</button>
+        {!data.isUploaded && <button className="_button text-sm" onClick={upload}>Upload</button>}
+        {data.isUploaded && <button onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} className={classNames("_button text-sm", { "!bg-gray-300 !border-gray-400": !hovered || justUploaded })} onClick={upload}>{hovered && !justUploaded ? "Reupload" : "Uploaded"}</button>}
     </div>
 }

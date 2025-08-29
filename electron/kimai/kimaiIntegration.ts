@@ -26,9 +26,8 @@ export function makeKimaiIntegration(persistentState: PersistentState) {
                 
                 const uploadedChecksum = kimai.uploadedEntries.find(data => data.day === day)?.checksum
                 const currentChecksum = generateHashFromEntries(entries)
-                console.log(`checksum of day ${day}: ${currentChecksum}`)
                 const isUploaded = uploadedChecksum !== undefined && uploadedChecksum === currentChecksum
-                
+
                 return { date: entries[0]!.startTime, dayFormatted, duration, isUploaded }
             })
         }),
@@ -36,15 +35,36 @@ export function makeKimaiIntegration(persistentState: PersistentState) {
     )
 
     const uploadEntriesForDay = async (date: Date) => {
+        const api = await firstValueFrom(api$)
+        if (api === undefined) return
         const day = date.toLocaleDateString()
         const entries = (await firstValueFrom(persistentState.getTimeEntries())).filter(entry => entry.startTime.toLocaleDateString() === day)
-        console.log("uploading entries: ", entries)
-        // todo: implement upload
+        const allNotes = await firstValueFrom(persistentState.getNotes())
+
+        // delete any previously uploaded entries
+        const existingTimesheets = await api.fetchThymeTimesheets(date)
+        const deleteTimesheetPromises = []
+        for (const existingTimesheet of existingTimesheets) {
+            deleteTimesheetPromises.push(api.deleteTimesheet(existingTimesheet.id))
+        }
+        await Promise.all(deleteTimesheetPromises)
+
+        // create new entries
+        const projectId = 3; const activityId = 2; // todo: make these real
+        const createTimesheetPromises = []
+        for (const entry of entries) {
+            const notes = allNotes.filter(note => entry.startTime.getTime() <= note.time.getTime() && note.time.getTime() <= entry.endTime.getTime())
+            createTimesheetPromises.push(api.createThymeTimesheet(projectId, activityId, entry, notes))
+        }
+        await Promise.all(createTimesheetPromises)
+
+        // update uploadedEntries
+        persistentState.putKimaiUploadedEntry(day, generateHashFromEntries(entries))
     }
 
     return { api$, username$, overview$, uploadEntriesForDay }
 }
 
 function generateHashFromEntries(entries: TimeEntry[]) {
-    return generateHash(JSON.stringify(entries))
+    return generateHash(JSON.stringify(entries.toSorted((a, b) => a.id.localeCompare(b.id))))
 }

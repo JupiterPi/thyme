@@ -84,6 +84,17 @@ export class PersistentState {
         this.kimai$.next(kimai)
     }
 
+    public putKimaiUploadedEntry(day: string, checksum: number) {
+        return new Promise<void>(resolve => {
+            this.kimai$.pipe(first()).subscribe(kimai => {
+                const uploadedEntries = kimai.uploadedEntries.filter(entry => entry.day !== day)
+                uploadedEntries.push({ day, checksum })
+                this.kimai$.next({ ...kimai, uploadedEntries })
+                resolve()
+            })
+        })
+    }
+
     private state$ = combineLatest([this.activeStartTime$, this.timeEntries$, this.notes$, this.kimai$]).pipe(
         map(([activeStartTime, timeEntries, notes, kimai]) => ({ activeStartTime, timeEntries, notes, kimai } satisfies State)),
         shareReplay(1) /* like BehaviorSubject */
