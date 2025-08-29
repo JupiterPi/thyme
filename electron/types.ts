@@ -11,6 +11,7 @@ export const nullState: State = {
     notes: [],
     kimai: {
         connection: undefined,
+        uploadedEntries: [],
     },
 }
 
@@ -55,6 +56,16 @@ export type Kimai = {
         url: string,
         authToken: string,
     },
+    uploadedEntries: {
+        /**
+         * Date.toLocaleDateString()
+         */
+        day: string,
+        /**
+         * via electron/util.ts/generateHash
+         */
+        checksum: number,
+    }[]
 }
 
 export function isEnabled(kimai: Kimai) {

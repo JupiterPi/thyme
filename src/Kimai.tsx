@@ -18,7 +18,7 @@ export default function Kimai() {
 
         <div className="my-1 flex justify-center"><div className="h-0 w-full mx-2 border-t-1 border-green-400"></div></div>
 
-        <div className="flex justify-center">Entries here... (WIP)</div>
+        <KimaiDays />
 
     </div>
 }
@@ -104,5 +104,23 @@ function KimaiConnectionDialogEditable({ close: close }: { close: () => void }) 
             <div className={classNames("text-green-700", { "text-red-600": connectStatus.error })}>{connectStatus.message}</div>
         </div>
         {!isInitialSetup && <div><button className="_button !bg-red-300 hover:!bg-red-400 !border-red-600" onClick={disableKimai}>Disable Kimai</button></div>}
+    </div>
+}
+
+function KimaiDays() {
+    const overview = useObservable(ipc.kimaiOverview) ?? []
+
+    return <div className="flex flex-col gap-4">
+        {overview !== undefined && overview.map(day => <KimaiDay key={day.dayFormatted} data={day} />)}
+    </div>
+}
+
+function KimaiDay({ data }: { data: { date: Date, dayFormatted: string, duration: number, isUploaded: boolean } }) {
+    return <div className="flex gap-3 items-center">
+        <div className="font-medium">
+            {data.dayFormatted} <span> </span>
+            ({`${pad2(Math.floor(data.duration / 1000 / 60 / 60))}:${pad2(Math.floor(data.duration / 1000 / 60) % 60)}h`})
+        </div>
+        <button className="_button text-sm" onClick={() => ipc.kimaiUploadEntriesForDay(data.date)}>Upload</button>
     </div>
 }

@@ -1,3 +1,4 @@
+import dateFormat from "dateformat";
 import { PathLike } from "node:fs";
 import fs from "node:fs/promises"
 
@@ -22,4 +23,18 @@ export function getDuration(a: Date, b: Date) {
 
 export function pad2(num: number) {
     return num < 10 ? `0${num}` : `${num}`
+}
+
+export function formatOnlyDate(date: Date) {
+  return `${dateFormat(date, "DDDD") /* (e.g. "today") */}, ${date.toLocaleDateString()}`
+}
+
+// https://stackoverflow.com/a/7616484/13164753
+export function generateHash(str: string) {
+  let hash = 0
+  for (const char of str) {
+    hash = (hash << 5) - hash + char.charCodeAt(0)
+    hash |= 0
+  }
+  return hash
 }
