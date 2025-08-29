@@ -1,4 +1,4 @@
-import React, { useEffect } from "react"
+import React from "react"
 import ReactDOM from "react-dom/client"
 import "./ipc"
 import "./index.css"
@@ -11,6 +11,7 @@ import { Settings } from "./Settings"
 import { isDev } from "./buildInfo"
 import { Timeline } from "./Timeline"
 import Kimai from "./Kimai"
+import { useObservable } from "./util"
 
 const pageId = window.location.search.startsWith("?pageId=") ? window.location.search.slice("?pageId=".length) : ""
 
@@ -32,13 +33,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 )
 
 function Root() {
-  const [state, setState] = React.useState<State>(nullState)
-  useEffect(() => {
-    const subscription = ipc.state.subscribe(state => {
-      setState(state)
-    })
-    return () => subscription.unsubscribe()
-  }, [])
+  const state = useObservable(ipc.state) ?? nullState
 
   return <>
     {/* draggable title bar */}

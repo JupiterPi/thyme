@@ -1,5 +1,6 @@
 import dateFormat from "dateformat"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { Observable } from "rxjs"
 
 export function getDuration(a: Date, b: Date) {
     const duration = a.getTime() > b.getTime() ? 0 : b.getTime() - a.getTime()
@@ -37,4 +38,13 @@ export function formatOnlyDate(date: Date) {
 
 export function getFractionalHours(date: Date) {
   return date.getHours() + (date.getMinutes() / 60)
+}
+
+export function useObservable<T>(observable: Observable<T>): T | undefined {
+  const [state, setState] = useState<T | undefined>(undefined)
+  useEffect(() => {
+    const subscription = observable.subscribe(setState)
+    return () => subscription.unsubscribe()
+  }, [observable])
+  return state
 }

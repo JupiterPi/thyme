@@ -1,8 +1,9 @@
-import { useContext, useEffect, useState } from "react"
+import { useContext, useState } from "react"
 import { StateContext } from "./main"
 import classNames from "classnames"
 import ipc from "./ipc"
 import { isEnabled } from "../electron/types"
+import { pad2, useObservable } from "./util"
 
 export default function Kimai() {
     return <div className="flex flex-col gap-3 w-full">
@@ -25,12 +26,7 @@ export default function Kimai() {
 function KimaiConnectionDialog() {
     const state = useContext(StateContext)
 
-    const [kimaiUsername, setKimaiUsername] = useState("")
-    useEffect(() => {
-        let ignore = false
-        ipc.getKimaiUsername().then(kimaiUsername => !ignore && setKimaiUsername(kimaiUsername ?? "..."))
-        return () => { ignore = true }
-    }, [])
+    const kimaiUsername = useObservable(ipc.kimaiUsername) ?? "..."
 
     const kimaiHostname = state.kimai.connection?.url.replace(/https?:\/\//, "").replace(/\/$/, "") ?? "..."
 
