@@ -54,18 +54,21 @@ export function KimaiSetupDialog() {
 
     if (state.kimai !== undefined) return <div className="text-red font-semibold">The Kimai integration is already connected!</div>
 
-    return <div className="flex flex-col gap-2 w-full _container !bg-green-200">
-        <div className="flex gap-2 items-center">
-            URL: <input className="_input !bg-green-300 flex-1" value={url} onChange={e => setUrl(e.target.value)}></input>
+    return <>
+        <p>Open your Kimai web app and navigate to <i>User &gt; API Access</i> to create an API token.</p>
+        <div className="flex flex-col gap-2 w-full _container !bg-green-200">
+            <div className="flex gap-2 items-center">
+                URL: <input placeholder="e. g. https://demo.kimai.org" className="_input !bg-green-300 flex-1" value={url} onChange={e => setUrl(e.target.value)}></input>
+            </div>
+            <div className="flex gap-2 items-center">
+                <span className="text-nowrap">API Token:</span> <input placeholder="e. g. 6d71a0a35f67aef6758bed0e8" className="_input !bg-green-300 flex-1 w-0" value={authToken} onChange={e => setAuthToken(e.target.value)}></input>
+            </div>
+            <div className="flex gap-3 items-center">
+                <button className="_button" disabled={url.length === 0 || authToken.length === 0} onClick={connect}>Connect</button>
+                <div className={classNames("text-green-700", { "text-red-600": connectStatus.error })}>{connectStatus.message}</div>
+            </div>
         </div>
-        <div className="flex gap-2 items-center">
-            <span className="text-nowrap">API Token:</span> <input className="_input !bg-green-300 flex-1 w-0" value={authToken} onChange={e => setAuthToken(e.target.value)}></input>
-        </div>
-        <div className="flex gap-3 items-center">
-            <button className="_button" disabled={url.length === 0 || authToken.length === 0} onClick={connect}>Connect</button>
-            <div className={classNames("text-green-700", { "text-red-600": connectStatus.error })}>{connectStatus.message}</div>
-        </div>
-    </div>
+    </>
 }
 
 export function Kimai() {
@@ -99,8 +102,9 @@ export function Kimai() {
                 </div>
             </div>
             <div className="flex gap-2 flex-wrap w-full">
-                <button className="_button">Force sync</button>
-                <button className="_button" onClick={disableKimai}>{confirmingDisconnect ? "Confirm" : "Disconnect"}</button>
+                {/* todo: implement force sync */}
+                {/* <button className="_button">Force sync</button> */}
+                <button className="_button" onClick={disableKimai}>{confirmingDisconnect ? "Confirm" : "Disable"}</button>
             </div>
         </div>
     )
