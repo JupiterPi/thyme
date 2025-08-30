@@ -3,7 +3,6 @@ import { version } from "./buildInfo";
 import { getLatestVersion } from "./updates";
 import ipc from "./ipc";
 import { StateContext } from "./main";
-import { isEnabled } from "../electron/types";
 
 export function Settings() {
     const state = useContext(StateContext)
@@ -29,7 +28,7 @@ export function Settings() {
             <p>Made with ❤️ by <a href="https://jupiterpi.de" target="_blank" className="text-green-500">JupiterPi</a></p>
 
             {/* enable Kimai */}
-            {!isEnabled(state.kimai) && <button className="_button" onClick={() => { ipc.openPage("kimai"); ipc.closePage("settings") }}>Enable Kimai integration</button>}
+            {state.kimai === undefined && <button className="_button" onClick={() => { ipc.openPage("kimaiSetup"); ipc.closePage("settings") }}>Enable Kimai integration</button>}
         </div>
     )
 }

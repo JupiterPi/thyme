@@ -10,12 +10,10 @@ export const ipcPushChannels = [
     "setTimelineDay",
     "openPage",
     "closePage",
-    "kimaiUploadEntriesForDay",
 ] as const
 
 export const ipcPullChannels = [
     "state",
     "timelineDay",
     "kimaiUsername",
-    "kimaiOverview",
 ] as const

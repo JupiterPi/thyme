@@ -97,8 +97,7 @@ export const PushIPC = {
   reduceTimeEntries: (...actions: TimeEntriesAction[]) => persistentState.reduceTimeEntries(actions),
   reduceNotes: (...actions: NotesAction[]) => persistentState.reduceNotes(actions),
   deleteAllTimeEntriesAndNotes: () => persistentState.deleteAllTimeEntriesAndNotes(),
-  setKimai: (kimai: Kimai) => persistentState.setKimai(kimai),
-  kimaiUploadEntriesForDay: async (date: Date) => await kimaiIntegration.uploadEntriesForDay(date),
+  setKimai: (kimai: Kimai | undefined) => persistentState.setKimai(kimai),
   loadMockData: () => persistentState.loadMockData(),
   openJSON: () => shell.showItemInFolder(persistentStateFile),
   exportCSV: async (type: "byDay" | "allEntries") => {
@@ -109,7 +108,7 @@ export const PushIPC = {
     }
   },
   setTimelineDay: (date: string) => timelineDay$.next(date),
-  openPage: (page: "history" | "timeline" | "settings" | "kimai") => windowManager.openOrShowPage(pages[page]),
+  openPage: (page: "history" | "timeline" | "settings" | "kimaiSetup" | "kimai") => windowManager.openOrShowPage(pages[page]),
   closePage: (pageId: string) => windowManager.closeWindow(pageId),
 } satisfies { [key in typeof ipcPushChannels[number]]: (...args: any[]) => any }
 
@@ -118,5 +117,4 @@ export const PullIPC = {
   state: persistentState.getState(),
   timelineDay: timelineDay$.pipe(filter(day => day !== null)),
   kimaiUsername: kimaiIntegration.username$,
-  kimaiOverview: kimaiIntegration.overview$,
 } satisfies { [key in typeof ipcPullChannels[number]]: Observable<any> }

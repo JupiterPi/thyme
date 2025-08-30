@@ -2,17 +2,14 @@ export type State = {
     activeStartTime: Date | null,
     timeEntries: TimeEntry[],
     notes: Note[],
-    kimai: Kimai,
+    kimai: Kimai | undefined,
 }
 
 export const nullState: State = {
     activeStartTime: null,
     timeEntries: [],
     notes: [],
-    kimai: {
-        connection: undefined,
-        uploadedEntries: [],
-    },
+    kimai: undefined,
 }
 
 export type TimeEntry = {
@@ -52,22 +49,12 @@ export type NotesAction = {
 export const mergeThreshold = 1 * 60 * 1000
 
 export type Kimai = {
-    connection: undefined | {
-        url: string,
-        authToken: string,
-    },
+    url: string,
+    authToken: string,
+    cutoff: Date,
     uploadedEntries: {
-        /**
-         * Date.toLocaleDateString()
-         */
-        day: string,
-        /**
-         * via electron/util.ts/generateHash
-         */
-        checksum: number,
+        entry: TimeEntry,
+        notes: Note[],
+        timesheetId: number
     }[]
-}
-
-export function isEnabled(kimai: Kimai) {
-    return kimai.connection !== undefined
 }

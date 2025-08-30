@@ -7,7 +7,6 @@ import { StateContext } from "./main"
 import ipc from "./ipc"
 import { getLatestVersion } from "./updates"
 import { version } from "./buildInfo"
-import { isEnabled } from "../electron/types"
 
 export function Dashboard() {
     const state = useContext(StateContext)
@@ -87,7 +86,7 @@ export function Dashboard() {
         {/* navigation buttons */}
         <div className="flex gap-2">
             <button className="_button" onClick={() => ipc.openPage("history")}>History</button>
-            {isEnabled(state.kimai) && <button className="_button" onClick={() => ipc.openPage("kimai")}>Kimai</button>}
+            {state.kimai !== undefined && <button className="_button" onClick={() => ipc.openPage("kimai")}>Kimai</button>}
             <button className="_button" onClick={() => ipc.openPage("settings")}>
                 About
                 {isUpdateAvailable && <div className="bg-red-400 size-[10px] rounded-full absolute translate-y-[-30px] translate-x-[48px] animate-[ping_1432ms_infinite]"></div>}

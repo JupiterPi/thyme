@@ -51,7 +51,7 @@ export class KimaiAPI {
     }
 
     public async createThymeTimesheet(projectId: number, activityId: number, entry: TimeEntry, notes: Note[]) {
-        return await this.post("/api/timesheets", {
+        return await this.post<{ id: number }>("/api/timesheets", {
             project: projectId,
             activity: activityId,
             begin: formatDate(entry.startTime),
@@ -61,9 +61,11 @@ export class KimaiAPI {
         })
     }
 
-    public async deleteTimesheet(id: string) {
+    public async deleteTimesheet(id: number) {
         return await this.delete(`/api/timesheets/${id}`)
     }
+
+    // todo: validate response data
 }
 
 function formatDate(date: Date) {

@@ -1,4 +1,4 @@
-import { auditTime, BehaviorSubject, combineLatest, first, map, Observable, shareReplay, skip } from "rxjs"
+import { auditTime, BehaviorSubject, combineLatest, first, firstValueFrom, map, Observable, shareReplay, skip } from "rxjs"
 import { randomUUID } from "node:crypto"
 import { PathLike } from "node:fs"
 import fs from "node:fs/promises"
@@ -75,24 +75,18 @@ export class PersistentState {
         })
     }
 
-    private kimai$ = new BehaviorSubject<Kimai>(nullState.kimai)
+    private kimai$ = new BehaviorSubject<Kimai | undefined>(nullState.kimai)
     public getKimai() {
         return this.kimai$.asObservable()
     }
 
-    public setKimai(kimai: Kimai) {
+    public setKimai(kimai: Kimai | undefined) {
         this.kimai$.next(kimai)
     }
-
-    public putKimaiUploadedEntry(day: string, checksum: number) {
-        return new Promise<void>(resolve => {
-            this.kimai$.pipe(first()).subscribe(kimai => {
-                const uploadedEntries = kimai.uploadedEntries.filter(entry => entry.day !== day)
-                uploadedEntries.push({ day, checksum })
-                this.kimai$.next({ ...kimai, uploadedEntries })
-                resolve()
-            })
-        })
+    public async updateKimai(updateKimai: Partial<Kimai>) {
+        const kimai = await firstValueFrom(this.kimai$)
+        if (kimai === undefined) return
+        this.kimai$.next({ ...kimai, ...updateKimai })
     }
 
     private state$ = combineLatest([this.activeStartTime$, this.timeEntries$, this.notes$, this.kimai$]).pipe(
@@ -131,6 +125,7 @@ export class PersistentState {
 
             this.state$.pipe(skip(1), auditTime(500), /* write state when it's settled */).subscribe(state => this.writeStateToFile(state))
         })
+        // todo: validate schema
     }
 
     private async readStateFromFile() {

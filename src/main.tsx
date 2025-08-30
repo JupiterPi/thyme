@@ -12,6 +12,7 @@ import { isDev } from "./buildInfo"
 import { Timeline } from "./Timeline"
 import Kimai from "./Kimai"
 import { useObservable } from "./util"
+import KimaiSetup from "./KimaiSetup"
 
 const pageId = window.location.search.startsWith("?pageId=") ? window.location.search.slice("?pageId=".length) : ""
 
@@ -21,6 +22,7 @@ const pages: { id: string, title?: string, component: JSX.Element }[] = [
   { id: "timeline", title: "Timeline", component: <Timeline /> },
   { id: "settings", title: "About", component: <Settings /> },
   { id: "kimai", title: "Kimai", component: <Kimai /> },
+  { id: "kimaiSetup", title: "Kimai Setup", component: <KimaiSetup /> },
 ]
 const page = pages.find(page => page.id === (pageId.length > 0 ? pageId : "dashboard")) ?? { id: "", title: undefined, component: <div>not found</div> }
 
