@@ -86,11 +86,10 @@ export function Dashboard() {
         {/* navigation buttons */}
         <div className="flex gap-2">
             <button className="_button" onClick={() => ipc.openPage("history")}>History</button>
-            {state.kimai !== undefined && <button className="_button" onClick={() => ipc.openPage("kimai")}>Kimai</button>}
             <button className="_button" onClick={() => ipc.openPage("settings")}>
-                About
-                {isUpdateAvailable && <div className="bg-red-400 size-[10px] rounded-full absolute translate-y-[-30px] translate-x-[48px] animate-[ping_1432ms_infinite]"></div>}
-                {isUpdateAvailable && <div className="bg-red-400 size-[10px] rounded-full absolute translate-y-[-30px] translate-x-[48px]"></div>}
+                Settings
+                {isUpdateAvailable && <div className="bg-red-400 size-[10px] rounded-full absolute translate-y-[-30px] translate-x-[61px] animate-[ping_1432ms_infinite]"></div>}
+                {isUpdateAvailable && <div className="bg-red-400 size-[10px] rounded-full absolute translate-y-[-30px] translate-x-[61px]"></div>}
             </button>
         </div>
         

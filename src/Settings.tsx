@@ -1,19 +1,18 @@
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { version } from "./buildInfo";
 import { getLatestVersion } from "./updates";
-import ipc from "./ipc";
-import { StateContext } from "./main";
+import KimaiSection from "./Kimai";
 
 export function Settings() {
-    const state = useContext(StateContext)
-
     const [latestVersion, setLatestVersion] = useState<string | undefined>(undefined);
     useEffect(() => {
         getLatestVersion().then(version => setLatestVersion(version)).catch(e => console.error(e))
     }, [])
 
     return (
-        <div className="w-full h-full flex flex-col items-start gap-3 text-green-900 font-medium p-1 leading-5">
+        <div className="w-full flex flex-col items-start gap-3 text-green-900 font-medium p-1 leading-5">
+
+            {/* Info section */}
             <h2 className="text-xl font-semibold mb-1">Info</h2>
             <p>Thyme {version}</p>
             <div className="_container py-2! bg-green-200!">
@@ -27,8 +26,10 @@ export function Settings() {
             <p>Visit the project on GitHub: <br /> <a href="https://github.com/JupiterPi/thyme" target="_blank" className="text-green-500">JupiterPi/thyme</a></p>
             <p>Made with ❤️ by <a href="https://jupiterpi.de" target="_blank" className="text-green-500">JupiterPi</a></p>
 
-            {/* enable Kimai */}
-            {state.kimai === undefined && <button className="_button" onClick={() => { ipc.openPage("kimaiSetup"); ipc.closePage("settings") }}>Enable Kimai integration</button>}
+            {/* Kimai section */}
+            <h2 className="text-xl font-semibold mb-1 mt-4">Kimai</h2>
+            <KimaiSection />
+
         </div>
     )
 }
