@@ -3,14 +3,14 @@ import { randomUUID } from "node:crypto"
 import { PathLike } from "node:fs"
 import fs from "node:fs/promises"
 import { exists, getDuration, pad2, parseDateReviver } from "./util"
-import { Kimai, mergeThreshold, Note, NotesAction, nullState, State, TimeEntriesAction, TimeEntry } from "./types"
+import { Kimai, mergeThreshold, Note, NotesAction, defaultState, State, TimeEntriesAction, TimeEntry } from "./types"
 import dateFormat from "dateformat"
 import { formatOnlyDate } from "../src/util"
 
 export class PersistentState {
     // state
 
-    private activeStartTime$ = new BehaviorSubject<Date | null>(nullState.activeStartTime)
+    private activeStartTime$ = new BehaviorSubject<Date | null>(defaultState.activeStartTime)
     public getActiveStartTime() {
         return this.activeStartTime$.asObservable()
     }
@@ -19,7 +19,7 @@ export class PersistentState {
         this.activeStartTime$.next(startTime)
     }
 
-    private timeEntries$ = new BehaviorSubject<TimeEntry[]>(nullState.timeEntries)
+    private timeEntries$ = new BehaviorSubject<TimeEntry[]>(defaultState.timeEntries)
     public getTimeEntries() {
         return this.timeEntries$.asObservable()
     }
@@ -43,7 +43,7 @@ export class PersistentState {
         })
     }
 
-    private notes$ = new BehaviorSubject<Note[]>(nullState.notes)
+    private notes$ = new BehaviorSubject<Note[]>(defaultState.notes)
     public getNotes() {
         return this.notes$.asObservable()
     }
@@ -75,7 +75,7 @@ export class PersistentState {
         })
     }
 
-    private kimai$ = new BehaviorSubject<Kimai | undefined>(nullState.kimai)
+    private kimai$ = new BehaviorSubject<Kimai | undefined>(defaultState.kimai)
     public getKimai() {
         return this.kimai$.asObservable()
     }
@@ -132,10 +132,10 @@ export class PersistentState {
         if (await exists(this.persistentFile)) {
             const file = await fs.readFile(this.persistentFile, "utf-8")
             const state = JSON.parse(file, parseDateReviver)
-            return { ...nullState, ...state } as State
+            return { ...defaultState, ...state } as State
         } else {
-            await this.writeStateToFile(nullState)
-            return nullState
+            await this.writeStateToFile(defaultState)
+            return defaultState
         }
     }
 

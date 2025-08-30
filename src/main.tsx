@@ -5,7 +5,7 @@ import "./index.css"
 import { Dashboard } from "./Dashboard"
 import { History } from "./History"
 import ipc from "./ipc"
-import { nullState, State } from "../electron/types"
+import { defaultState, State } from "../electron/types"
 import logo from "./assets/icon.svg"
 import { Settings } from "./Settings"
 import { isDev } from "./buildInfo"
@@ -22,7 +22,7 @@ const pages: { id: string, title?: string, component: JSX.Element }[] = [
 ]
 const page = pages.find(page => page.id === (pageId.length > 0 ? pageId : "dashboard")) ?? { id: "", title: undefined, component: <div className="text-red-500">page not found</div> }
 
-export const StateContext = React.createContext<State>(nullState)
+export const StateContext = React.createContext<State>(defaultState)
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -31,7 +31,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 )
 
 function Root() {
-  const state = useObservable(ipc.state) ?? nullState
+  const state = useObservable(ipc.state) ?? defaultState
 
   return <>
     {/* draggable title bar */}

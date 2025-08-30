@@ -5,7 +5,7 @@ export type State = {
     kimai: Kimai | undefined,
 }
 
-export const nullState: State = {
+export const defaultState: State = {
     activeStartTime: null,
     timeEntries: [],
     notes: [],
@@ -58,3 +58,10 @@ export type Kimai = {
         timesheetId: number
     }[]
 }
+
+export const defaultKimai = (url: string, authToken: string): Kimai => ({
+    url,
+    authToken,
+    cutoff: new Date(),
+    uploadedEntries: []
+})
