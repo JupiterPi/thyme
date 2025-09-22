@@ -4,12 +4,12 @@ import { fileURLToPath } from "node:url"
 import path from "node:path"
 import { TrayIcon } from "./trayIcon"
 import { PersistentState } from "./persistentState"
-import { BehaviorSubject, filter, first, Observable } from "rxjs"
+import { BehaviorSubject, filter, Observable } from "rxjs"
 import fs from "node:fs"
 import { ipcPullChannels, ipcPushChannels } from "./ipcChannels"
 import { pages, WindowManager } from "./windowManager"
-import { Kimai, NotesAction, TimeEntriesAction } from "./types"
 import { makeKimaiIntegration } from "./kimai/kimaiIntegration"
+import { actions } from "./schema"
 
 export const __dirname = path.dirname(fileURLToPath(import.meta.url))
 process.env.APP_ROOT = path.join(__dirname, "..")
@@ -32,7 +32,14 @@ if (!fs.existsSync(userDataDir)) {
 }
 
 const persistentStateFile = path.join(userDataDir, "data.json")
-const persistentState = new PersistentState(persistentStateFile)
+const persistentState = (() => {
+  try {
+    return new PersistentState(persistentStateFile)
+  } catch (e) {
+    displayError(`Failed to load data.json: ${e}`)
+    return null as unknown as PersistentState
+  }
+})()
 
 const kimaiIntegration = makeKimaiIntegration(persistentState)
 
@@ -68,8 +75,8 @@ app.whenReady().then(() => {
   // tray icon
   new TrayIcon({
     vitePublicDirectory: process.env.VITE_PUBLIC,
-    activeStartTime$: persistentState.getActiveStartTime(),
-    toggleActive: () => toggleActive(),
+    state$: persistentState.getState(),
+    toggleActive: () => persistentState.dispatch(actions.toggleActive()),
     toggleOpen: () => {
       const window = windowManager.findWindow(pages.dashboard)
       if (window?.isVisible()) {
@@ -84,26 +91,10 @@ app.whenReady().then(() => {
   })
 })
 
-function toggleActive() {
-  persistentState.getActiveStartTime().pipe(first()).subscribe(activeStartTime => {
-    if (activeStartTime === null) {
-      persistentState.setActiveStartTime(new Date())
-    } else {
-      persistentState.setActiveStartTime(null)
-      persistentState.reduceTimeEntries([{ action: "create", entry: { startTime: activeStartTime, endTime: new Date() } }])
-    }
-  })
-}
-
 const timelineDay$ = new BehaviorSubject<string | null>(null)
 
 export const PushIPC = {
-  toggleActive: () => toggleActive(),
-  reduceTimeEntries: (...actions: TimeEntriesAction[]) => persistentState.reduceTimeEntries(actions),
-  reduceNotes: (...actions: NotesAction[]) => persistentState.reduceNotes(actions),
-  deleteAllTimeEntriesAndNotes: () => persistentState.deleteAllTimeEntriesAndNotes(),
-  setKimai: (kimai: Kimai | undefined) => persistentState.setKimai(kimai),
-  loadMockData: () => persistentState.loadMockData(),
+  dispatch: persistentState.dispatch,
   openJSON: () => shell.showItemInFolder(persistentStateFile),
   exportCSV: async (type: "byDay" | "allEntries") => {
     const exportPath = await dialog.showSaveDialog({ title: "Export CSV", buttonLabel: "Export", filters: [{ name: "CSV", extensions: ["csv"] }] })

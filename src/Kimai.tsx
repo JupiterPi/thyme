@@ -1,9 +1,9 @@
 import { useContext, useState } from "react"
 import { StateContext } from "./main"
 import ipc from "./ipc"
-import { defaultKimai, defaultState } from "../electron/types"
 import { useEphemeralState, useObservable } from "./util"
 import classNames from "classnames"
+import { actions } from "../electron/schema"
 
 export default function KimaiSection() {
     const state = useContext(StateContext)
@@ -38,7 +38,7 @@ export function KimaiSetupDialog() {
             })
             if (response.ok) {
                 setConnectStatus({ error: false, message: "Connected successfully!" })
-                ipc.setKimai(defaultKimai(url, authToken))
+                ipc.dispatch(actions.enableKimai(url, authToken))
                 /// todo
             } else {
                 if (response.status === 401) {
@@ -83,8 +83,7 @@ export function Kimai() {
             setConfirmingDisconnect(true)
             return
         } else {
-            ipc.setKimai(defaultState.kimai)
-            ipc.closePage("kimai")
+            ipc.dispatch(actions.disableKimai())
         }
     }
 

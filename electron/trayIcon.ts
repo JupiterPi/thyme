@@ -1,7 +1,8 @@
 import path from "path"
 import { Menu, nativeImage, Tray } from "electron"
-import { Observable } from "rxjs"
+import { distinctUntilChanged, map, Observable } from "rxjs"
 import { getDuration, pad2 } from "./util"
+import { State } from "./schema"
 
 export class TrayIcon {
   private tray: Tray
@@ -11,9 +12,9 @@ export class TrayIcon {
   private _isActive = false
   private _activeStartTime: Date | null = null
 
-  constructor({ vitePublicDirectory, activeStartTime$, toggleActive, toggleOpen, openDashboard, quit }: {
+  constructor({ vitePublicDirectory, state$, toggleActive, toggleOpen, openDashboard, quit }: {
     vitePublicDirectory: string,
-    activeStartTime$: Observable<Date | null>,
+    state$: Observable<State>,
     toggleActive: () => void,
     toggleOpen: () => void,
     openDashboard: () => void,
@@ -25,7 +26,7 @@ export class TrayIcon {
     this.tray = new Tray(this.inactiveTrayIcon)
     this.updateIsActiveIndicator(false)
 
-    activeStartTime$.subscribe(activeStartTime => {
+    state$.pipe(map(state => state.activeStartTime), distinctUntilChanged()).subscribe(activeStartTime => {
       this._activeStartTime = activeStartTime
       const isActive = activeStartTime !== null
       this._isActive = isActive

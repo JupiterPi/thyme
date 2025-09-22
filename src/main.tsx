@@ -5,12 +5,12 @@ import "./index.css"
 import { Dashboard } from "./Dashboard"
 import { History } from "./History"
 import ipc from "./ipc"
-import { defaultState, State } from "../electron/types"
 import logo from "./assets/icon.svg"
 import { Settings } from "./Settings"
 import { isDev } from "./buildInfo"
 import { Timeline } from "./Timeline"
 import { useObservable } from "./util"
+import { defaultState, State } from "../electron/schema"
 
 const pageId = window.location.search.startsWith("?pageId=") ? window.location.search.slice("?pageId=".length) : ""
 

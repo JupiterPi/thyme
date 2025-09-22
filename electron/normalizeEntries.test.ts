@@ -1,6 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { normalizeTimeEntries } from "./persistentState"
-import { mergeThreshold } from "./types"
+import { mergeThreshold, normalizeTimeEntries } from "./schema"
 
 describe("normalizeTimeEntries()", () => {
 

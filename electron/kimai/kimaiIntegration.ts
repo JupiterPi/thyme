@@ -1,11 +1,11 @@
-import { auditTime, combineLatest, distinctUntilChanged, filter, map, shareReplay, switchMap } from "rxjs"
+import { auditTime, distinctUntilChanged, filter, map, shareReplay, switchMap } from "rxjs"
 import { PersistentState } from "../persistentState"
 import { KimaiAPI } from "./kimaiApi"
-import { Kimai } from "../types"
+import { actions, Kimai } from "../schema"
 
 export function makeKimaiIntegration(persistentState: PersistentState) {
-    const api$ = persistentState.getKimai().pipe(
-        map(kimai => kimai === undefined ? undefined : new KimaiAPI(kimai.url, kimai.authToken)),
+    const api$ = persistentState.getState().pipe(
+        map(state => state.kimai === undefined ? undefined : new KimaiAPI(state.kimai!.url, state.kimai!.authToken)),
         shareReplay(1)
     )
 
@@ -16,29 +16,24 @@ export function makeKimaiIntegration(persistentState: PersistentState) {
     )
 
     // sync entries
-    combineLatest([persistentState.getKimai(), persistentState.getTimeEntries(), persistentState.getNotes()]).pipe(
-        distinctUntilChanged((prev, curr) => {
-            const [prevKimai, prevTimeEntries, prevNotes] = prev
-            const [currKimai, currTimeEntries, currNotes] = curr
-            return JSON.stringify(prevKimai) === JSON.stringify(currKimai) &&
-                JSON.stringify(prevTimeEntries) === JSON.stringify(currTimeEntries) &&
-                JSON.stringify(prevNotes) === JSON.stringify(currNotes)
+    persistentState.getState().pipe(
+        distinctUntilChanged((previous, current) => {
+            return JSON.stringify(previous) === JSON.stringify(current)
         }),
         auditTime(1000),
-        switchMap(async ([kimai, timeEntries, notes]) => {
-            if (kimai === undefined) return
+        switchMap(async state => {
+            if (state.kimai === undefined) return
+            const kimai = state.kimai!
             const api = new KimaiAPI(kimai.url, kimai.authToken)
 
             // compute entries to compare, handling cutoff
-            const currentEntries = timeEntries
+            const currentEntries = state.timeEntries
                 .filter(entry => entry.startTime.getTime() >= kimai.cutoff.getTime())
                 .map(entry => {
-                    const entryNotes = notes.filter(note => entry.startTime.getTime() <= note.time.getTime() && note.time.getTime() <= entry.endTime.getTime())
+                    const entryNotes = state.notes.filter(note => entry.startTime.getTime() <= note.time.getTime() && note.time.getTime() <= entry.endTime.getTime())
                     return { entry, entryNotes }
                 })
             const uploadedEntries = kimai.uploadedEntries.filter(entry => entry.entry.startTime.getTime() >= kimai.cutoff.getTime())
-
-            // todo: remove console.log(`======== currentEntries: ${currentEntries.length}, uploadedEntries: ${uploadedEntries.length}`)
 
             const promises: Promise<Kimai["uploadedEntries"][0] | undefined>[] = []
 
@@ -76,7 +71,7 @@ export function makeKimaiIntegration(persistentState: PersistentState) {
             return (await Promise.all(promises)).filter(entry => entry !== undefined)
         })
     ).subscribe(newUploadedEntries => {
-        persistentState.updateKimai({ uploadedEntries: newUploadedEntries })
+        if (newUploadedEntries !== undefined) persistentState.dispatch(actions.updateKimaiUploadedEntries(newUploadedEntries))
     })
 
     return { api$, username$ }

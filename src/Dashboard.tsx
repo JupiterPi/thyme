@@ -7,6 +7,7 @@ import { StateContext } from "./main"
 import ipc from "./ipc"
 import { getLatestVersion } from "./updates"
 import { version } from "./buildInfo"
+import { actions } from "../electron/schema"
 
 export function Dashboard() {
     const state = useContext(StateContext)
@@ -37,7 +38,7 @@ export function Dashboard() {
     const [noteInput, setNoteInput] = useState("")
     const [showNoteInputSuccessMessage, setShowNoteInputSuccessMessage] = useEphemeralState(false, 1000)
     const submitNote = () => {
-        ipc.reduceNotes({ action: "create", note: { text: noteInput, time: new Date() } })
+        ipc.dispatch(actions.createNote({ text: noteInput }))
         setNoteInput("")
         setShowNoteInputSuccessMessage(true)
     }
@@ -45,7 +46,7 @@ export function Dashboard() {
     return <>
 
         {/* icon */}
-        <div className={classNames("w-20 h-20 rounded-xl bg-green-300 cursor-pointer", {"grayscale-100": !isActive})} onClick={() => ipc.toggleActive()}>
+        <div className={classNames("w-20 h-20 rounded-xl bg-green-300 cursor-pointer", {"grayscale-100": !isActive})} onClick={() => { ipc.dispatch(actions.toggleActive()) }}>
             <img src={icon} className={classNames("h-full p-2", {"animate-clock": isActive})}></img>
         </div>
 

@@ -2,10 +2,10 @@ import { useContext, useEffect, useState } from "react"
 import ipc from "./ipc"
 import { StateContext } from "./main"
 import { formatOnlyDate, getFractionalHours, pad2, useObservable } from "./util"
-import { Note, TimeEntry } from "../electron/types"
 import { useMeasure } from "@uidotdev/usehooks"
 import dateFormat from "dateformat"
 import classNames from "classnames"
+import { Note, TimeEntry } from "../electron/schema"
 
 export function Timeline() {
     const state = useContext(StateContext)

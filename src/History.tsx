@@ -1,11 +1,10 @@
 import { useContext, useState } from "react"
 import { StateContext } from "./main"
 import dateFormat from "dateformat"
-import { mergeThreshold, Note, TimeEntry } from "../electron/types"
 import { formatOnlyDate, getDuration, midnight, pad2, useEphemeralState } from "./util"
 import classNames from "classnames"
 import ipc from "./ipc"
-import { isDev } from "./buildInfo"
+import { actions, mergeThreshold, Note, TimeEntry } from "../electron/schema"
 
 export function History() {
     const state = useContext(StateContext)
@@ -58,13 +57,12 @@ export function History() {
                 <div className="flex flex-col items-center gap-2">
                     {state.timeEntries.length > 0 && <div className="_button text-sm" onClick={() => {
                         if (confirmingDeleteAll) {
-                            ipc.deleteAllTimeEntriesAndNotes()
+                            ipc.dispatch(actions.deleteAllTimeEntriesAndNotes())
                             setConfirmingDeleteAll(false)
                         } else {
                             setConfirmingDeleteAll(true)
                         }
                     }}>{confirmingDeleteAll ? "confirm" : "delete all"}</div>}
-                    {isDev && <div className="_button text-sm" onClick={() => ipc.loadMockData()}>load mock data (dev)</div>}
                 </div>
             </div>
         </div>
@@ -110,7 +108,7 @@ function Notes({ notes }: { notes: Note[] }) {
                     <span>{note.text}</span>
                 </div>
                 {expandedId === note.id && <div className="_container bg-gray-200! border-gray-400! p-1! w-fit! border-t-transparent! rounded-t-[0]!">
-                    <div className="_button" onClick={() => ipc.reduceNotes({ action: "delete", id: note.id })}>delete</div>
+                    <div className="_button" onClick={() => ipc.dispatch(actions.deleteNote(note))}>delete</div>
                 </div>}
             </div>
         ))}
@@ -150,21 +148,21 @@ function TimeEntryExpanded({ timeEntry, previousEntry, nextEntry }: { timeEntry:
         }
     }
     const saveChanges = () => {
-        ipc.reduceTimeEntries({ action: "update", entry: { ...timeEntry, startTime, endTime } })
+        ipc.dispatch(actions.updateTimeEntry({ ...timeEntry, startTime, endTime }))
         setEditingField(null)
     }
 
     const insertPause = () => {
         const [pauseStart, pauseEnd] = splitTimeEquallyWithinMergeThreshold(timeEntry.startTime, timeEntry.endTime)
-        ipc.reduceTimeEntries(
-            { action: "delete", id: timeEntry.id },
-            { action: "create", entry: { startTime: timeEntry.startTime, endTime: pauseStart } },
-            { action: "create", entry: { startTime: pauseEnd, endTime: timeEntry.endTime } },
+        ipc.dispatch(
+            actions.deleteTimeEntry(timeEntry),
+            actions.createTimeEntry({ startTime: timeEntry.startTime, endTime: pauseStart }),
+            actions.createTimeEntry({ startTime: pauseEnd, endTime: timeEntry.endTime })
         )
     }
 
     const deleteEntry = () => {
-        ipc.reduceTimeEntries({ action: "delete", id: timeEntry.id })
+        ipc.dispatch(actions.deleteTimeEntry(timeEntry))
     }
 
     const duration = getDuration(startTime, endTime)
@@ -225,14 +223,14 @@ function PauseExpanded({ previousEntry, nextEntry }: { previousEntry?: TimeEntry
 
     const insertEntry = () => {
         const [entryStart, entryEnd] = splitTimeEquallyWithinMergeThreshold(previousTime, nextTime)
-        ipc.reduceTimeEntries({ action: "create", entry: { startTime: entryStart, endTime: entryEnd } })
+        ipc.dispatch(actions.createTimeEntry({ startTime: entryStart, endTime: entryEnd }))
     }
 
     const deletePause = () => {
         if (nextEntry !== undefined) {
-            ipc.reduceTimeEntries({ action: "update", entry: { ...nextEntry, startTime: previousTime } })
+            ipc.dispatch(actions.updateTimeEntry({ ...nextEntry, startTime: previousTime }))
         } else {
-            ipc.reduceTimeEntries({ action: "update", entry: { ...previousEntry!, endTime: nextTime } })
+            ipc.dispatch(actions.updateTimeEntry({ ...previousEntry!, endTime: nextTime }))
         }
     }
 

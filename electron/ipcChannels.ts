@@ -1,10 +1,5 @@
 export const ipcPushChannels = [
-    "toggleActive",
-    "reduceTimeEntries",
-    "reduceNotes",
-    "deleteAllTimeEntriesAndNotes",
-    "setKimai",
-    "loadMockData",
+    "dispatch",
     "openJSON",
     "exportCSV",
     "setTimelineDay",
