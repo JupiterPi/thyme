@@ -31,6 +31,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 )
 
 function Root() {
+  const errors = useObservable(ipc.errors) ?? []
   const state = useObservable(ipc.state) ?? defaultState
 
   return <>
@@ -50,7 +51,8 @@ function Root() {
     <main>
       <StateContext.Provider value={state}>
         <div className="p-5 flex flex-col items-center gap-5 w-full absolute top-7 bottom-0 overflow-y-auto">
-          {page.component}
+          {errors.length === 0 && page.component}
+          {errors.length > 0 && <div className="text-red-500">{errors.map((err, i) => <div key={i}>{err}</div>)}</div>}
         </div>
       </StateContext.Provider>
     </main>

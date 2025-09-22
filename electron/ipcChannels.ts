@@ -13,6 +13,7 @@ export const ipcPushChannels = [
 ] as const
 
 export const ipcPullChannels = [
+    "errors",
     "state",
     "timelineDay",
     "kimaiUsername",

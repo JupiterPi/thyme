@@ -21,6 +21,11 @@ export const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist")
 
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST
 
+const errors$ = new BehaviorSubject<string[]>([])
+export function displayError(err: string) {
+  errors$.next(errors$.getValue().concat([err]))
+}
+
 const userDataDir = isDev ? path.join(process.env.APP_ROOT, "dev-data") : app.getPath("userData")
 if (!fs.existsSync(userDataDir)) {
   fs.mkdirSync(userDataDir, { recursive: true })
@@ -113,7 +118,7 @@ export const PushIPC = {
 } satisfies { [key in typeof ipcPushChannels[number]]: (...args: any[]) => any }
 
 export const PullIPC = {
-  // todo: update these with useObservable
+  errors: errors$.asObservable(),
   state: persistentState.getState(),
   timelineDay: timelineDay$.pipe(filter(day => day !== null)),
   kimaiUsername: kimaiIntegration.username$,
