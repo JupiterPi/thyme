@@ -48,6 +48,7 @@ export const State = z.object({
     timeEntries: z.array(TimeEntry).default([]),
     notes: z.array(Note).default([]),
     kimai: Kimai.optional(),
+    dontUseActivitiesWithoutKimai: z.boolean().default(false),
 })
 export type State = z.infer<typeof State>
 export const defaultState = State.parse({})
@@ -108,6 +109,10 @@ export const { actions, actionResolver } = createActionsWithImmer<State>()({
         if (state.kimai === undefined) throw Error("Kimai is not enabled")
         state.kimai = undefined
     },
+    setDontUseActivitiesWithoutKimai: (dontUseActivitiesWithoutKimai: boolean) => state => {
+        state.dontUseActivitiesWithoutKimai = dontUseActivitiesWithoutKimai
+        if (state.kimai === undefined && dontUseActivitiesWithoutKimai === true) state.activity = null
+    }
 })
 
 export const mergeThreshold = 1 * 60 * 1000 // 1 minute

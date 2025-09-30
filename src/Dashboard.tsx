@@ -8,7 +8,6 @@ import ipc from "./ipc"
 import { getLatestVersion } from "./updates"
 import { version } from "./buildInfo"
 import { actions } from "../electron/schema"
-import { useDebounce } from "@uidotdev/usehooks"
 
 export function Dashboard() {
     const state = useContext(StateContext)
@@ -82,34 +81,14 @@ export function Dashboard() {
 
 function SelectActivityNormal() {
     const state = useContext(StateContext)
-    const isActive = state.activeStartTime !== null
-
-    const [activityInput, setActivityInput] = useState("")
-    const debouncedActivityInput = useDebounce(activityInput, 200)
-    const [hasHadInput, setHasHadInput] = useState(false)
-    const debouncedHasHadInput = useDebounce(hasHadInput, 200)
-    useEffect(() => {
-        if (debouncedActivityInput.length === 0) {
-            if (debouncedHasHadInput) {
-                ipc.dispatch(actions.setActivity(null))
-            }
-        } else {
-            if (debouncedActivityInput !== state.activity?.name) {
-                ipc.dispatch(actions.setActivity({ name: debouncedActivityInput }))
-            }
-        }
-    }, [debouncedActivityInput, debouncedHasHadInput, state.activity])
-    useEffect(() => {
-        if (state.activity) setActivityInput(state.activity?.name ?? "")
-    }, [state.activity])
 
     return <div className="flex w-43">
         <input
-            disabled={isActive}
-            className="py-0.5 px-1.5 border border-green-400 bg-green-300 focus:border-1.5 focus:outline-none rounded-md p-2 flex-1 w-full font-regular text-center"
+            disabled={state.activeStartTime !== null || state.dontUseActivitiesWithoutKimai} /* todo: also colour gray then */
+            className={classNames("py-0.5 px-1.5 border border-green-400 bg-green-300 focus:border-1.5 focus:outline-none rounded-md p-2 flex-1 w-full font-regular text-center", { "grayscale-100": state.dontUseActivitiesWithoutKimai })}
             placeholder="(No Activity)"
-            value={activityInput}
-            onChange={e => { setActivityInput(e.target.value); setHasHadInput(true) }}
+            value={state.activity?.name || ""}
+            onChange={e => ipc.dispatch(actions.setActivity(e.target.value.length === 0 ? null : { name: e.target.value }))}
         />
     </div>
 }

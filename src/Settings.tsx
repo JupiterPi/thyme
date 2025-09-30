@@ -1,7 +1,10 @@
-import { useEffect, useState } from "react"
+import { useContext, useEffect, useState } from "react"
 import { version } from "./buildInfo"
 import { getLatestVersion } from "./updates"
 import KimaiSection from "./kimai";
+import ipc from "./ipc";
+import { actions } from "../electron/schema";
+import { StateContext } from "./main";
 
 export function Settings() {
     const [latestVersion, setLatestVersion] = useState<string | undefined>(undefined);
@@ -28,10 +31,25 @@ export function Settings() {
 
             {/* Kimai section */}
             <h2 className="text-xl font-semibold mb-1 mt-4">Kimai</h2>
+            <UseActivitiesWithoutKimaiCheckbox />
             <KimaiSection />
 
             {/* todo: add manual? */}
 
+        </div>
+    )
+}
+
+function UseActivitiesWithoutKimaiCheckbox() {
+    const state = useContext(StateContext)
+    return (
+        <div className="flex gap-2 items-center">
+            <input type="checkbox" id="dontUseActivitiesWithoutKimai"
+                checked={state.dontUseActivitiesWithoutKimai}
+                onChange={e => ipc.dispatch(actions.setDontUseActivitiesWithoutKimai(e.target.checked))}
+                className="_checkbox"
+            />
+            <label htmlFor="dontUseActivitiesWithoutKimai" className="">Don't use activities without Kimai</label>
         </div>
     )
 }
