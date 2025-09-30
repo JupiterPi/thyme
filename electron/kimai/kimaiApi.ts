@@ -1,6 +1,7 @@
 import dateFormat from "dateformat"
 import { midnight } from "../util"
 import { Note, TimeEntry } from "../schema"
+import z from "zod"
 
 export class KimaiAPI {
     private url: string
@@ -28,8 +29,10 @@ export class KimaiAPI {
         return response
     }
 
-    private async get<T>(path: string) {
-        return (await this.request("GET", path, undefined)).json() as T
+    private async get<T>(path: string, schema?: z.ZodType<T>) {
+        const response = await (await this.request("GET", path, undefined)).json() as T
+        if (schema) return schema.parse(response)
+        return response
     }
     private async post<T>(path: string, body?: unknown) {
         return (await this.request("POST", path, body)).json() as T
@@ -41,21 +44,34 @@ export class KimaiAPI {
     // endpoints
 
     public async fetchCurrentUser() {
-        return await this.get<{ alias: string, username: string }>("/api/users/me")
+        return await this.get("/api/users/me", z.object({
+            alias: z.string(),
+            username: z.string(),
+        }))
     }
 
     public async fetchProjects() {
-        return await this.get<{ id: number, name: string, globalActivities: boolean }[]>("/api/projects")
+        return await this.get("/api/projects", z.array(z.object({
+            id: z.number(),
+            name: z.string(),
+            globalActivities: z.boolean()
+        })))
     }
 
     public async fetchActivities() {
-        return await this.get<{ id: number, name: string, project: number | null }[]>("/api/activities")
+        return await this.get("/api/activities", z.array(z.object({
+            id: z.number(),
+            name: z.string(),
+            project: z.number().nullable()
+        })))
     }
 
     public async fetchThymeTimesheets(day: Date) {
         const start = formatDate(midnight(day, false))
         const end = formatDate(midnight(day, true))
-        return await this.get<{id: string}[]>(`/api/timesheets?begin=${start}&end=${end}&tags%5B%5D=thyme`)
+        return await this.get(`/api/timesheets?begin=${start}&end=${end}&tags%5B%5D=thyme`, z.array(z.object({
+            id: z.string()
+        })))
     }
 
     public async createThymeTimesheet(projectId: number, activityId: number, entry: TimeEntry, notes: Note[]) {
@@ -72,8 +88,6 @@ export class KimaiAPI {
     public async deleteTimesheet(id: number) {
         return await this.delete(`/api/timesheets/${id}`)
     }
-
-    // todo: validate response data
 }
 
 function formatDate(date: Date) {
