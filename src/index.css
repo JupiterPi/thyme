@@ -28,6 +28,9 @@ body {
 ._input {
     @apply border-1 border-green-700 bg-green-200 rounded-sm outline-none py-0.5 px-1.5 disabled:bg-gray-300 disabled:border-gray-400 placeholder:text-green-700 placeholder:opacity-50;
 }
+._checkbox {
+    @apply appearance-none w-5 h-5 shrink-0 border-1 border-green-700 bg-green-200 rounded-sm checked:bg-green-400 checked:after:content-['⬤'] after:text-[12px] flex justify-center items-center transition-[background] duration-30 text-green-800;
+}
 
 /* scrollbar */
 
