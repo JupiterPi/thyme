@@ -1,10 +1,10 @@
 import { useContext, useEffect, useState } from "react"
 import { version } from "./buildInfo"
 import { getLatestVersion } from "./updates"
-import KimaiSection from "./kimai";
 import ipc from "./ipc";
 import { actions } from "../electron/schema";
 import { StateContext } from "./main";
+import KimaiSection from "./kimai";
 
 export function Settings() {
     const [latestVersion, setLatestVersion] = useState<string | undefined>(undefined);
