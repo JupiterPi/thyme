@@ -1,8 +1,9 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 
 import { Observable } from "rxjs"
 
-let ipc = {}
+const ipc = {}
 Object.keys(window.ipc).forEach((key) => {
     if (key.startsWith("listen__")) {
         const channel = key.slice("listen__".length)

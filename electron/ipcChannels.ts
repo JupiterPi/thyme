@@ -1,17 +1,16 @@
 export const ipcPushChannels = [
-    "toggleActive",
-    "reduceTimeEntries",
-    "reduceNotes",
-    "deleteAllTimeEntriesAndNotes",
-    "loadMockData",
+    "dispatch",
     "openJSON",
     "exportCSV",
     "setTimelineDay",
     "openPage",
-    "closePage"
+    "closePage",
 ] as const
 
 export const ipcPullChannels = [
+    "errors",
     "state",
-    "timelineDay"
+    "timelineDay",
+    "kimaiUsername",
+    "kimaiProjectsAndActivities",
 ] as const

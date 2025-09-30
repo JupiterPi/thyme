@@ -1,25 +1,21 @@
 import { useContext, useEffect, useState } from "react"
 import ipc from "./ipc"
 import { StateContext } from "./main"
-import { formatOnlyDate, getFractionalHours, pad2 } from "./util"
-import { Note, TimeEntry } from "../electron/types"
+import { formatOnlyDate, getFractionalHours, pad2, useObservable } from "./util"
 import { useMeasure } from "@uidotdev/usehooks"
 import dateFormat from "dateformat"
 import classNames from "classnames"
+import { Note, TimeEntry } from "../electron/schema"
 
 export function Timeline() {
     const state = useContext(StateContext)
-    const [timelineDay, setTimelineDay] = useState<string | null>(null)
+    const timelineDay = useObservable(ipc.timelineDay) ?? null
     const [entries, setEntries] = useState<TimeEntry[]>([])
     const [notes, setNotes] = useState<Note[]>([])
     useEffect(() => {
-        const subscription = ipc.timelineDay.subscribe(date => {
-            setTimelineDay(date)
-            setEntries(state.timeEntries.filter(entry => formatOnlyDate(entry.startTime) === date))
-            setNotes(state.notes.filter(note => formatOnlyDate(note.time) === date))
-        })
-        return () => subscription.unsubscribe()
-    }, [state])
+        setEntries(state.timeEntries.filter(entry => formatOnlyDate(entry.startTime) === timelineDay))
+        setNotes(state.notes.filter(note => formatOnlyDate(note.time) === timelineDay))
+    }, [timelineDay, state])
 
     const [containerRef, { height: uiHeight }] = useMeasure()
     const position = (hour: number) => (uiHeight ?? 0) * (hour / 24)

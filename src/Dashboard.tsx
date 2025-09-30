@@ -7,6 +7,7 @@ import { StateContext } from "./main"
 import ipc from "./ipc"
 import { getLatestVersion } from "./updates"
 import { version } from "./buildInfo"
+import { actions } from "../electron/schema"
 
 export function Dashboard() {
     const state = useContext(StateContext)
@@ -34,18 +35,10 @@ export function Dashboard() {
         })
     }, [])
 
-    const [noteInput, setNoteInput] = useState("")
-    const [showNoteInputSuccessMessage, setShowNoteInputSuccessMessage] = useEphemeralState(false, 1000)
-    const submitNote = () => {
-        ipc.reduceNotes({ action: "create", note: { text: noteInput, time: new Date() } })
-        setNoteInput("")
-        setShowNoteInputSuccessMessage(true)
-    }
-
     return <>
 
         {/* icon */}
-        <div className={classNames("w-20 h-20 rounded-xl bg-green-300 cursor-pointer", {"grayscale-100": !isActive})} onClick={() => ipc.toggleActive()}>
+        <div className={classNames("w-20 h-20 rounded-xl bg-green-300 cursor-pointer", {"grayscale-100": !isActive})} onClick={() => { ipc.dispatch(actions.toggleActive()) }}>
             <img src={icon} className={classNames("h-full p-2", {"animate-clock": isActive})}></img>
         </div>
 
@@ -70,7 +63,63 @@ export function Dashboard() {
             </div>
         </div>
 
-        {/* quick add note */}
+        {state.kimai === undefined ? <SelectActivityNormal /> : <SelectActivityKimai />}
+        <div className="-mt-8"></div> {/* less spacing */}
+        <AddNote />
+
+        {/* navigation buttons */}
+        <div className="flex gap-2">
+            <button className="_button" onClick={() => ipc.openPage("history")}>History</button>
+            <button className="_button" onClick={() => ipc.openPage("settings")}>
+                Settings
+                {isUpdateAvailable && <div className="bg-red-400 size-[10px] rounded-full absolute translate-y-[-30px] translate-x-[61px] animate-[ping_1432ms_infinite]"></div>}
+                {isUpdateAvailable && <div className="bg-red-400 size-[10px] rounded-full absolute translate-y-[-30px] translate-x-[61px]"></div>}
+            </button>
+        </div>
+    </>
+}
+
+function SelectActivityNormal() {
+    const state = useContext(StateContext)
+
+    return <div className="flex w-43">
+        <input
+            disabled={state.activeStartTime !== null || state.dontUseActivitiesWithoutKimai}
+            className={classNames("py-0.5 px-1.5 border border-green-400 bg-green-300 focus:border-1.5 focus:outline-none rounded-md p-2 flex-1 w-full font-regular text-center", { "grayscale-100": state.dontUseActivitiesWithoutKimai })}
+            placeholder="(No Activity)"
+            value={state.activity?.name || ""}
+            onChange={e => ipc.dispatch(actions.setActivity(e.target.value.length === 0 ? null : { name: e.target.value }))}
+        />
+    </div>
+}
+
+function SelectActivityKimai() {
+    const state = useContext(StateContext)
+    const isActive = state.activeStartTime !== null
+
+    return <div className="flex w-43">
+        <button
+            className={classNames("py-0.5 px-1.5 border border-green-400 bg-green-300 focus:border-1.5 focus:outline-none rounded-md p-2 flex-1 w-full font-regular text-center whitespace-nowrap overflow-hidden text-ellipsis", { "grayscale-100": isActive, "cursor-pointer": !isActive })}
+            onClick={() => !isActive && ipc.openPage("selectKimaiActivityDialog")}
+        >
+            {state.activity?.name || "No activity"}
+        </button>
+    </div>
+}
+
+function AddNote() {
+    const state = useContext(StateContext)
+    const isActive = state.activeStartTime !== null
+
+    const [noteInput, setNoteInput] = useState("")
+    const [showNoteInputSuccessMessage, setShowNoteInputSuccessMessage] = useEphemeralState(false, 1000)
+    const submitNote = () => {
+        ipc.dispatch(actions.createNote({ text: noteInput }))
+        setNoteInput("")
+        setShowNoteInputSuccessMessage(true)
+    }
+
+    return (
         <div className="flex gap-1 w-43">
             <input
                 disabled={!isActive}
@@ -82,16 +131,5 @@ export function Dashboard() {
             />
             {noteInput.length > 0 && <button className="_button" onClick={submitNote}>Note</button>}
         </div>
-
-        {/* navigation buttons */}
-        <div className="flex gap-2">
-            <button className="_button" onClick={() => ipc.openPage("history")}>History</button>
-            <button className="_button" onClick={() => ipc.openPage("settings")}>
-                About
-                {isUpdateAvailable && <div className="bg-red-400 size-[10px] rounded-full absolute translate-y-[-30px] translate-x-[48px] animate-[ping_1432ms_infinite]"></div>}
-                {isUpdateAvailable && <div className="bg-red-400 size-[10px] rounded-full absolute translate-y-[-30px] translate-x-[48px]"></div>}
-            </button>
-        </div>
-        
-    </>
+    )
 }

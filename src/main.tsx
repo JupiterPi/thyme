@@ -1,15 +1,17 @@
-import React, { useEffect } from "react"
+import React from "react"
 import ReactDOM from "react-dom/client"
 import "./ipc"
 import "./index.css"
 import { Dashboard } from "./Dashboard"
 import { History } from "./History"
 import ipc from "./ipc"
-import { nullState, State } from "../electron/types"
 import logo from "./assets/icon.svg"
 import { Settings } from "./Settings"
 import { isDev } from "./buildInfo"
 import { Timeline } from "./Timeline"
+import { useObservable } from "./util"
+import { defaultState, State } from "../electron/schema"
+import { SelectKimaiActivityDialog } from "./SelectKimaiActivityDialog"
 
 const pageId = window.location.search.startsWith("?pageId=") ? window.location.search.slice("?pageId=".length) : ""
 
@@ -17,11 +19,12 @@ const pages: { id: string, title?: string, component: JSX.Element }[] = [
   { id: "dashboard", title: undefined, component: <Dashboard /> },
   { id: "history", title: "History", component: <History /> },
   { id: "timeline", title: "Timeline", component: <Timeline /> },
-  { id: "settings", title: "About", component: <Settings /> },
+  { id: "settings", title: "Settings", component: <Settings /> },
+  { id: "selectKimaiActivityDialog", title: "Select Kimai Activity", component: <SelectKimaiActivityDialog /> },
 ]
-const page = pages.find(page => page.id === (pageId.length > 0 ? pageId : "dashboard")) ?? { id: "", title: undefined, component: <div>not found</div> }
+const page = pages.find(page => page.id === (pageId.length > 0 ? pageId : "dashboard")) ?? { id: "", title: undefined, component: <div className="text-red-500">page not found</div> }
 
-export const StateContext = React.createContext<State>(nullState)
+export const StateContext = React.createContext<State>(defaultState)
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -30,13 +33,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 )
 
 function Root() {
-  const [state, setState] = React.useState<State>(nullState)
-  useEffect(() => {
-    const subscription = ipc.state.subscribe(state => {
-      setState(state)
-    })
-    return () => subscription.unsubscribe()
-  }, [])
+  const errors = useObservable(ipc.errors) ?? []
+  const state = useObservable(ipc.state) ?? defaultState
 
   return <>
     {/* draggable title bar */}
@@ -55,7 +53,8 @@ function Root() {
     <main>
       <StateContext.Provider value={state}>
         <div className="p-5 flex flex-col items-center gap-5 w-full absolute top-7 bottom-0 overflow-y-auto">
-          {page.component}
+          {errors.length === 0 && page.component}
+          {errors.length > 0 && <div className="text-red-500 font-mono font-semibold text-sm">{errors.map((err, i) => <div key={i}>Error(s) occurred! See logs for more info <br/><br/>{err}</div>)}</div>}
         </div>
       </StateContext.Provider>
     </main>

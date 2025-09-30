@@ -1,0 +1,192 @@
+import dateFormat from "dateformat"
+import z from "zod"
+import { v4 as randomUUID } from "uuid"
+import { createActionsWithImmer } from "./store"
+
+// schema
+
+export const Activity = z.object({
+    name: z.string(),
+    kimai: z.object({
+        projectId: z.number().int().nonnegative(),
+        activityId: z.number().int().nonnegative(),
+    }).optional()
+})
+export type Activity = z.infer<typeof Activity>
+
+export const TimeEntry = z.object({
+    id: z.uuid().default(() => randomUUID()),
+    startTime: z.date(),
+    endTime: z.date(),
+    activity: Activity.optional(),
+})
+export type TimeEntry = z.infer<typeof TimeEntry>
+
+export const Note = z.object({
+    id: z.uuid().default(() => randomUUID()),
+    time: z.date().default(() => new Date()),
+    text: z.string(),
+})
+export type Note = z.infer<typeof Note>
+
+export const Kimai = z.object({
+    url: z.url({ protocol: /^https?$/, hostname: z.regexes.hostname }),
+    authToken: z.string().regex(/^[a-zA-Z0-9]{25}$/),
+    cutoff: z.date().default(() => new Date()),
+    kimaiActivity: z.object({ projectId: z.number().int().nonnegative(), activityId: z.number().int().nonnegative() }).optional(),
+    uploadedEntries: z.array(z.object({
+        entry: TimeEntry,
+        notes: z.array(Note),
+        kimaiTimesheetId: z.number().int().nonnegative(),
+    })).default([]),
+})
+export type Kimai = z.infer<typeof Kimai>
+
+export const State = z.object({
+    activeStartTime: z.date().nullable().default(null),
+    activity: Activity.nullable().default(null),
+    timeEntries: z.array(TimeEntry).default([]),
+    notes: z.array(Note).default([]),
+    kimai: Kimai.optional(),
+    dontUseActivitiesWithoutKimai: z.boolean().default(false),
+})
+export type State = z.infer<typeof State>
+export const defaultState = State.parse({})
+
+// actions
+
+export const { actions, actionResolver } = createActionsWithImmer<State>()({
+    toggleActive: () => state => {
+        if (state.activeStartTime === null) {
+            state.activeStartTime = new Date()
+        } else {
+            state.timeEntries.push({
+                id: undefined as unknown as string, // pick default value
+                startTime: state.activeStartTime,
+                endTime: new Date(),
+                activity: state.activity ?? undefined
+            })
+            state.timeEntries = normalizeTimeEntries(state.timeEntries)
+            state.activeStartTime = null
+        }
+    },
+    setActivity: (activity: Activity | null) => state => {
+        if (state.activeStartTime !== null) throw Error("Cannot set activity while timer is active")
+        state.activity = activity === null ? null : activity
+    },
+    createTimeEntry: (entry: Omit<TimeEntry, "id">) => state => {
+        state.timeEntries.push(entry as TimeEntry)
+        state.timeEntries = normalizeTimeEntries(state.timeEntries)
+    },
+    updateTimeEntry: (entry: TimeEntry) => state => {
+        state.timeEntries = state.timeEntries.filter(e => e.id !== entry.id)
+        state.timeEntries.push(entry)
+        state.timeEntries = normalizeTimeEntries(state.timeEntries)
+    },
+    deleteTimeEntry: (entry: TimeEntry) => state => {
+        state.timeEntries = state.timeEntries.filter(e => e.id !== entry.id)
+        state.timeEntries = normalizeTimeEntries(state.timeEntries)
+    },
+    createNote: (note: Omit<Note, "id" | "time">) => state => {
+        state.notes.push(note as Note)
+    },
+    deleteNote: (note: Note) => state => {
+        state.notes = state.notes.filter(n => n.id !== note.id)
+    },
+    deleteAllTimeEntriesAndNotes: () => state => {
+        state.timeEntries = []
+        state.notes = []
+    },
+    enableKimai: (url: string, authToken: string) => state => {
+        if (state.kimai !== undefined) throw Error("Kimai is already enabled")
+        state.kimai = { url, authToken } satisfies Pick<Kimai, "url" | "authToken"> as Kimai
+    },
+    updateKimaiUploadedEntries: (uploadedEntries: Kimai["uploadedEntries"]) => state => {
+        if (state.kimai === undefined) throw Error("Kimai is not enabled")
+        state.kimai.uploadedEntries = uploadedEntries
+    },
+    disableKimai: () => state => {
+        if (state.kimai === undefined) throw Error("Kimai is not enabled")
+        state.kimai = undefined
+    },
+    setDontUseActivitiesWithoutKimai: (dontUseActivitiesWithoutKimai: boolean) => state => {
+        state.dontUseActivitiesWithoutKimai = dontUseActivitiesWithoutKimai
+        if (state.kimai === undefined && dontUseActivitiesWithoutKimai === true) state.activity = null
+    }
+})
+
+export const mergeThreshold = 1 * 60 * 1000 // 1 minute
+export function normalizeTimeEntries(entries: TimeEntry[]) {
+    const mergeEntries = (a: TimeEntry, b: TimeEntry): TimeEntry => {
+        const timeBounds = [a.startTime, a.endTime, b.startTime, b.endTime].map(t => t.getTime()).toSorted()
+        const startTime = new Date(timeBounds[0])
+        const endTime = new Date(timeBounds[3])
+        if (JSON.stringify(a.activity) !== JSON.stringify(b.activity)) {
+            throw Error("Cannot merge entries with different activities")
+        }
+        return { id: randomUUID(), startTime, endTime, activity: a.activity }
+    }
+    const splitEntry = (entry: TimeEntry, splitTime: Date): [TimeEntry, TimeEntry] => {
+        return [
+            { id: randomUUID(), startTime: entry.startTime, endTime: new Date(splitTime.getTime()) },
+            { id: randomUUID(), startTime: new Date(splitTime.getTime()), endTime: entry.endTime },
+        ]
+    }
+
+    entries = entries
+        .filter(entry => {
+            // discard negative duration entries
+            return entry.startTime.getTime() < entry.endTime.getTime()
+        })
+        .flatMap(entry => {
+            // split entries that go over midnight
+            const goesOverMidnight = (entry: TimeEntry) => entry.startTime.toLocaleDateString() !== entry.endTime.toLocaleDateString() && dateFormat(entry.endTime, "HH:MM:ss.l") !== "00:00:00.000"
+            if (goesOverMidnight(entry)) {
+                const entries: TimeEntry[] = []
+                let currentEntry: TimeEntry = entry
+                const midnight = new Date(entry.startTime)
+                while (goesOverMidnight(currentEntry)) {
+                    midnight.setHours(24, 0, 0, 0) // set to the start of the next day
+                    const [a, b] = splitEntry(currentEntry, midnight)
+                    entries.push(a)
+                    currentEntry = b
+                }
+                entries.push(currentEntry)
+                return entries
+            } else {
+                return entry
+            }
+        })
+
+    // sort entries
+    const sortedEntries = entries.sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
+    
+    const handledEntries: TimeEntry[] = []
+    let currentEntry: TimeEntry | undefined = undefined
+    for (const entry of sortedEntries) {
+        if (currentEntry === undefined) {
+            currentEntry = entry
+            continue
+        }
+        if (
+            // if the entries are overlapping, merge them
+            // if the entries are below the threshold apart, merge them
+            entry.startTime.getTime() - currentEntry.endTime.getTime() <= mergeThreshold
+            // don't merge over midnight
+            && currentEntry.startTime.toLocaleDateString() === entry.startTime.toLocaleDateString()
+            // don't merge entries with different activities
+            && JSON.stringify(currentEntry.activity) === JSON.stringify(entry.activity)
+        ) {
+            currentEntry = mergeEntries(currentEntry, entry)
+        } else {
+            // otherwise push the current entry and start a new one
+            handledEntries.push(currentEntry)
+            currentEntry = entry
+        }
+    }
+    if (currentEntry) {
+        handledEntries.push(currentEntry)
+    }
+    
+    return handledEntries
+}

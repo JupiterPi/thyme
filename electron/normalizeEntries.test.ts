@@ -1,6 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { normalizeTimeEntries } from "./persistentState"
-import { mergeThreshold } from "./types"
+import { mergeThreshold, normalizeTimeEntries } from "./schema"
 
 describe("normalizeTimeEntries()", () => {
 
@@ -26,7 +25,7 @@ describe("normalizeTimeEntries()", () => {
         expect(normalizeTimeEntries([entries[1], entries[0]])).toEqual(entries)
     })
 
-    test("join overlapping entries", () => {
+    test("merge overlapping entries", () => {
         const entries = [
             { id: "1", startTime: time(14,0), endTime: time(14,10) },
             { id: "2", startTime: time(14,5), endTime: time(14,15) },
@@ -37,7 +36,7 @@ describe("normalizeTimeEntries()", () => {
         expect(result[0].endTime).toEqual(entries[1].endTime)
     })
 
-    test("join entries blow the threshold apart", () => {
+    test("merge entries blow the threshold apart", () => {
         const entries = [
             { id: "1", startTime: time(14,0), endTime: time(14,5) },
             { id: "2", startTime: new Date(time(14,5).getTime() + mergeThreshold), endTime: time(14,15) },
@@ -91,6 +90,47 @@ describe("normalizeTimeEntries()", () => {
         const entries = [
             { id: "1", startTime: new Date(time(23,55).getTime() - 24*60*60*1000), endTime: new Date(time(0,0).getTime() - 30*1000) },
             { id: "2", startTime: time(0,0), endTime: time(0,5) },
+        ]
+        expect(normalizeTimeEntries(entries)).toEqual(entries)
+    })
+
+    test("do merge entries with the same activity", () => {
+        const entries = [
+            { id: "1", startTime: time(14,0), endTime: time(14,5), activity: { name: "A" } },
+            { id: "2", startTime: new Date(time(14,5).getTime() + mergeThreshold), endTime: time(14,15), activity: { name: "A" } },
+        ]
+        console.log(JSON.stringify(entries[0].activity) === JSON.stringify(entries[1].activity))
+        const result = normalizeTimeEntries(entries)
+        expect(result.length).toBe(1)
+        expect(result[0].startTime).toEqual(entries[0].startTime)
+        expect(result[0].endTime).toEqual(entries[1].endTime)
+        expect(JSON.stringify(result[0].activity)).toEqual(JSON.stringify(entries[0].activity))
+    })
+
+    test("don't merge entries with different activities", () => {
+        const entries = [
+            { id: "1", startTime: time(14,0), endTime: time(14,5), activity: { name: "A" } },
+            { id: "2", startTime: new Date(time(14,5).getTime() + mergeThreshold), endTime: time(14,15), activity: { name: "B" } },
+        ]
+        expect(normalizeTimeEntries(entries)).toEqual(entries)
+    })
+
+    test("do merge entries with the same activity (with Kimai data)", () => {
+        const entries = [
+            { id: "1", startTime: time(14,0), endTime: time(14,5), activity: { name: "A", kimai: { projectId: 1, activityId: 1 } } },
+            { id: "2", startTime: new Date(time(14,5).getTime() + mergeThreshold), endTime: time(14,15), activity: { name: "A", kimai: { projectId: 1, activityId: 1 } } },
+        ]
+        const result = normalizeTimeEntries(entries)
+        expect(result.length).toBe(1)
+        expect(result[0].startTime).toEqual(entries[0].startTime)
+        expect(result[0].endTime).toEqual(entries[1].endTime)
+        expect(JSON.stringify(result[0].activity)).toEqual(JSON.stringify(entries[0].activity))
+    })
+
+    test("don't merge entries with different activities (with Kimai data)", () => {
+        const entries = [
+            { id: "1", startTime: time(14,0), endTime: time(14,5), activity: { name: "A", kimai: { projectId: 1, activityId: 1 } } },
+            { id: "2", startTime: new Date(time(14,5).getTime() + mergeThreshold), endTime: time(14,15), activity: { name: "A", kimai: { projectId: 1, activityId: 2 } } },
         ]
         expect(normalizeTimeEntries(entries)).toEqual(entries)
     })

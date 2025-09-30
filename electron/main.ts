@@ -4,11 +4,12 @@ import { fileURLToPath } from "node:url"
 import path from "node:path"
 import { TrayIcon } from "./trayIcon"
 import { PersistentState } from "./persistentState"
-import { BehaviorSubject, filter, first, Observable } from "rxjs"
+import { BehaviorSubject, filter, Observable } from "rxjs"
 import fs from "node:fs"
 import { ipcPullChannels, ipcPushChannels } from "./ipcChannels"
 import { pages, WindowManager } from "./windowManager"
-import { NotesAction, TimeEntriesAction } from "./types"
+import { makeKimaiIntegration } from "./kimai/kimaiIntegration"
+import { actions } from "./schema"
 
 export const __dirname = path.dirname(fileURLToPath(import.meta.url))
 process.env.APP_ROOT = path.join(__dirname, "..")
@@ -20,13 +21,28 @@ export const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist")
 
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST
 
+const errors$ = new BehaviorSubject<string[]>([])
+export function showGlobalError(msg: string, err: unknown) {
+  console.error(err)
+  errors$.next(errors$.getValue().concat([`${msg}: ${err}`]))
+}
+
 const userDataDir = isDev ? path.join(process.env.APP_ROOT, "dev-data") : app.getPath("userData")
 if (!fs.existsSync(userDataDir)) {
   fs.mkdirSync(userDataDir, { recursive: true })
 }
 
 const persistentStateFile = path.join(userDataDir, "data.json")
-const persistentState = new PersistentState(persistentStateFile)
+const persistentState = (() => {
+  try {
+    return new PersistentState(persistentStateFile)
+  } catch (e) {
+    showGlobalError("Failed to load data.json", e)
+    return null as unknown as PersistentState
+  }
+})()
+
+const kimaiIntegration = makeKimaiIntegration(persistentState)
 
 const windowManager = new WindowManager()
 
@@ -46,7 +62,7 @@ app.whenReady().then(() => {
   })
   Object.keys(PullIPC).forEach((channel) => {
     let lastValue: any
-    PullIPC[channel as keyof typeof PullIPC].subscribe(value => {
+    (PullIPC[channel as keyof typeof PullIPC] as Observable<any>).subscribe(value => {
       lastValue = value
       windowManager.sendAll(("listen__" + channel), value)
     })
@@ -60,8 +76,8 @@ app.whenReady().then(() => {
   // tray icon
   new TrayIcon({
     vitePublicDirectory: process.env.VITE_PUBLIC,
-    activeStartTime$: persistentState.getActiveStartTime(),
-    toggleActive: () => toggleActive(),
+    state$: persistentState.getState(),
+    toggleActive: () => persistentState.dispatch(actions.toggleActive()),
     toggleOpen: () => {
       const window = windowManager.findWindow(pages.dashboard)
       if (window?.isVisible()) {
@@ -76,25 +92,10 @@ app.whenReady().then(() => {
   })
 })
 
-function toggleActive() {
-  persistentState.getActiveStartTime().pipe(first()).subscribe(activeStartTime => {
-    if (activeStartTime === null) {
-      persistentState.setActiveStartTime(new Date())
-    } else {
-      persistentState.setActiveStartTime(null)
-      persistentState.reduceTimeEntries([{ action: "create", entry: { startTime: activeStartTime, endTime: new Date() } }])
-    }
-  })
-}
-
 const timelineDay$ = new BehaviorSubject<string | null>(null)
 
 export const PushIPC = {
-  toggleActive: () => toggleActive(),
-  reduceTimeEntries: (...actions: TimeEntriesAction[]) => persistentState.reduceTimeEntries(actions),
-  reduceNotes: (...actions: NotesAction[]) => persistentState.reduceNotes(actions),
-  deleteAllTimeEntriesAndNotes: () => persistentState.deleteAllTimeEntriesAndNotes(),
-  loadMockData: () => persistentState.loadMockData(),
+  dispatch: persistentState.dispatch,
   openJSON: () => shell.showItemInFolder(persistentStateFile),
   exportCSV: async (type: "byDay" | "allEntries") => {
     const exportPath = await dialog.showSaveDialog({ title: "Export CSV", buttonLabel: "Export", filters: [{ name: "CSV", extensions: ["csv"] }] })
@@ -104,11 +105,14 @@ export const PushIPC = {
     }
   },
   setTimelineDay: (date: string) => timelineDay$.next(date),
-  openPage: (page: "history" | "timeline" | "settings") => windowManager.openOrShowPage(pages[page]),
+  openPage: (page: "history" | "timeline" | "settings" | "selectKimaiActivityDialog") => windowManager.openOrShowPage(pages[page]),
   closePage: (pageId: string) => windowManager.closeWindow(pageId),
 } satisfies { [key in typeof ipcPushChannels[number]]: (...args: any[]) => any }
 
-export const PullIPC: { [key in typeof ipcPullChannels[number]]: Observable<any> } = {
+export const PullIPC = {
+  errors: errors$.asObservable(),
   state: persistentState.getState(),
   timelineDay: timelineDay$.pipe(filter(day => day !== null)),
-}
+  kimaiUsername: kimaiIntegration.username$,
+  kimaiProjectsAndActivities: kimaiIntegration.projectsAndActivities$,
+} satisfies { [key in typeof ipcPullChannels[number]]: Observable<any> }
