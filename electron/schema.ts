@@ -1,7 +1,7 @@
 import dateFormat from "dateformat"
 import z from "zod"
 import { v4 as randomUUID } from "uuid"
-import { createActions, stateAssertion } from "./store"
+import { createActionsWithImmer } from "./store"
 
 // schema
 
@@ -52,29 +52,58 @@ export const State = z.object({
 export type State = z.infer<typeof State>
 export const defaultState = State.parse({})
 
-const stateWithAssertion = {
-    isNotActive: stateAssertion<State>(state => state.activeStartTime === null, "Timer is active"),
-    isKimaiEnabled: stateAssertion<State>(state => state.kimai !== undefined, "Kimai is not enabled"),
-    isKimaiDisabled: stateAssertion<State>(state => state.kimai === undefined, "Kimai is not disabled"),
-}
-
 // actions
 
-export const { actions, actionResolver } = createActions<State>()({
-    toggleActive: () => state => state.activeStartTime === null
-        ? { ...state, activeStartTime: new Date() }
-        : { ...state, activeStartTime: null, timeEntries: [...state.timeEntries, TimeEntry.parse({ startTime: state.activeStartTime, endTime: new Date(), activity: state.activity ?? undefined } satisfies Omit<TimeEntry, "id">)] },
-    setActivity: (activity: Activity | null) => state => ({ ...stateWithAssertion.isNotActive(state), activity: activity === null ? null : Activity.parse(activity) }),
-    createTimeEntry: (entry: Omit<TimeEntry, "id">) => state => ({ ...state, timeEntries: [...state.timeEntries, TimeEntry.parse(entry)] }),
-    updateTimeEntry: (entry: TimeEntry) => state => ({ ...state, timeEntries: [...state.timeEntries.filter(e => e.id !== entry.id), TimeEntry.parse(entry)] }),
-    deleteTimeEntry: (entry: TimeEntry) => state => ({ ...state, timeEntries: state.timeEntries.filter(e => e.id !== entry.id) }),
-    createNote: (note: Omit<Note, "id" | "time">) => state => ({ ...state, notes: [...state.notes, Note.parse(note)] }),
-    updateNote: (note: Note) => state => ({ ...state, notes: [...state.notes.filter(n => n.id !== note.id), Note.parse(note)] }),
-    deleteNote: (note: Note) => state => ({ ...state, notes: state.notes.filter(n => n.id !== note.id) }),
-    deleteAllTimeEntriesAndNotes: () => state => ({ ...state, timeEntries: [], notes: [] }),
-    enableKimai: (url: string, authToken: string) => state => ({ ...stateWithAssertion.isKimaiDisabled(state), kimai: Kimai.parse({ url, authToken }) }),
-    updateKimaiUploadedEntries: (uploadedEntries: Kimai["uploadedEntries"]) => state => ({ ...stateWithAssertion.isKimaiEnabled(state), kimai: { ...state.kimai!, uploadedEntries } }),
-    disableKimai: () => state => ({ ...stateWithAssertion.isKimaiEnabled(state), kimai: undefined }),
+export const { actions, actionResolver } = createActionsWithImmer<State>()({
+    toggleActive: () => state => {
+        if (state.activeStartTime === null) {
+            state.activeStartTime = new Date()
+        } else {
+            state.timeEntries.push({
+                id: undefined as unknown as string, // pick default value
+                startTime: state.activeStartTime,
+                endTime: new Date(),
+                activity: state.activity ?? undefined
+            })
+            state.activeStartTime = null
+        }
+    },
+    setActivity: (activity: Activity | null) => state => {
+        if (state.activeStartTime !== null) throw Error("Cannot set activity while timer is active")
+        state.activity = activity === null ? null : activity
+    },
+    createTimeEntry: (entry: Omit<TimeEntry, "id">) => state => {
+        state.timeEntries.push(entry as TimeEntry)
+    },
+    updateTimeEntry: (entry: TimeEntry) => state => {
+        state.timeEntries = state.timeEntries.filter(e => e.id !== entry.id)
+        state.timeEntries.push(entry)
+    },
+    deleteTimeEntry: (entry: TimeEntry) => state => {
+        state.timeEntries = state.timeEntries.filter(e => e.id !== entry.id)
+    },
+    createNote: (note: Omit<Note, "id" | "time">) => state => {
+        state.notes.push(note as Note)
+    },
+    deleteNote: (note: Note) => state => {
+        state.notes = state.notes.filter(n => n.id !== note.id)
+    },
+    deleteAllTimeEntriesAndNotes: () => state => {
+        state.timeEntries = []
+        state.notes = []
+    },
+    enableKimai: (url: string, authToken: string) => state => {
+        if (state.kimai !== undefined) throw Error("Kimai is already enabled")
+        state.kimai = { url, authToken } satisfies Pick<Kimai, "url" | "authToken"> as Kimai
+    },
+    updateKimaiUploadedEntries: (uploadedEntries: Kimai["uploadedEntries"]) => state => {
+        if (state.kimai === undefined) throw Error("Kimai is not enabled")
+        state.kimai.uploadedEntries = uploadedEntries
+    },
+    disableKimai: () => state => {
+        if (state.kimai === undefined) throw Error("Kimai is not enabled")
+        state.kimai = undefined
+    },
 })
 
 // todo: it seems liek normalizeTimeEntries is not used anymore, fix that!

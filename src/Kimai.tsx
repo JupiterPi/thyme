@@ -39,7 +39,6 @@ export function KimaiSetupDialog() {
             if (response.ok) {
                 setConnectStatus({ error: false, message: "Connected successfully!" })
                 ipc.dispatch(actions.enableKimai(url, authToken))
-                /// todo
             } else {
                 if (response.status === 401) {
                     setConnectStatus({ error: true, message: "Invalid authentication" })

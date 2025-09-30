@@ -1,11 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Draft, produce } from "immer"
 import { BehaviorSubject, filter, Observable } from "rxjs"
+import z from "zod"
 
 type _ActionReducer<State> = (state: State) => State
-type _Actions<State> = Record<string, (...args: never[]) => _ActionReducer<State>>
+type _Actions<State> = Record<string, (...args: any[]) => _ActionReducer<State>>
 type _Action<State, actions extends _Actions<State>, action extends keyof actions> = { action: action, args: Parameters<actions[action]> }
 type _ActionResolver<State, actions extends _Actions<State>> = <action extends keyof actions>(action: _Action<State, actions, action>) => _ActionReducer<State>
 
 export const createStore = <State, actions extends _Actions<State>>(
+    schema: z.ZodType<State>,
     initialState: State | (() => Promise<State>),
     actionResolver: _ActionResolver<State, actions>,
 ) => {
@@ -15,6 +19,7 @@ export const createStore = <State, actions extends _Actions<State>>(
     const state$ = new BehaviorSubject<State | undefined>(undefined)
 
     const resolveAction = <action extends keyof actions>(action: Action<action>) => actionResolver(action)
+    const applyAction = (state: State, action: ActionReducer) => schema.parse(action(state) satisfies State)
     
     const unhandledActionsBeforeInitialization: ActionReducer[] = []
     if (typeof initialState === "object") {
@@ -22,7 +27,7 @@ export const createStore = <State, actions extends _Actions<State>>(
     } else {
         (initialState as () => Promise<State>)().then(state => {
             unhandledActionsBeforeInitialization.forEach(actionReducer => {
-                state = actionReducer(state)
+                state = applyAction(state, actionReducer)
             })
             state$.next(state)
         })
@@ -37,7 +42,7 @@ export const createStore = <State, actions extends _Actions<State>>(
             } else {
                 let nextState = state as State
                 for (const action of actions) {
-                    nextState = resolveAction(action)(nextState)
+                    nextState = applyAction(nextState, resolveAction(action))
                 }
                 state$.next(nextState)
             }
@@ -46,15 +51,22 @@ export const createStore = <State, actions extends _Actions<State>>(
 }
 
 export const createActions = <State>() => <actions extends _Actions<State>>(actions: actions) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const actionsObj: any = {}
     for (const key in actions) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         actionsObj[key] = (...args: any[]) => ({ action: key, args })
     }
     const _actions = actionsObj as { [K in keyof actions]: (...args: Parameters<typeof actions[K]>) => _Action<State, actions, K> }
     const actionResolver: _ActionResolver<State, actions> = <action extends keyof actions>(action: _Action<State, actions, action>) => actions[action.action](...action.args)
     return { actions: _actions, actionResolver }
+}
+
+export const createActionsWithImmer = <State>() => <actions extends Record<string, (...args: any[]) => (draft: Draft<State>) => void>>(actions: actions) => {
+    const transformedActions = Object.fromEntries(Object.entries(actions).map(([key, produceFunction]) => {
+        const reducer = (...args: any[]) => (state: State) => produce(state, draft => produceFunction(...args)(draft))
+        return [key, reducer]
+    })) as unknown as { [K in keyof actions]: (...args: Parameters<typeof actions[K]>) => (state: State) => State }
+    const createActionsWithState = createActions<State>()
+    return createActionsWithState(transformedActions) as ReturnType<typeof createActionsWithState<typeof transformedActions>>
 }
 
 export const stateAssertion = <State>(validator: (state: State) => boolean, msg: string) => (state: State) => {

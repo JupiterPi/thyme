@@ -38,6 +38,7 @@
   "main": "dist-electron/main.js",
   "dependencies": {
     "@uidotdev/usehooks": "^2.4.1",
+    "immer": "^10.1.3",
     "uuid": "^11.1.0",
     "zod": "^4.1.5"
   }

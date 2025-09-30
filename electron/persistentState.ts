@@ -25,7 +25,7 @@ export class PersistentState {
     // persistence
 
     constructor(private persistentFile: PathLike) {
-        this.store = createStore(async () => this.readStateFromFile(), actionResolver)
+        this.store = createStore(State, async () => this.readStateFromFile(), actionResolver)
         this.store.state$.pipe(
             skip(2), // skip initial default state and read state
             auditTime(500), // write state when it's settled
