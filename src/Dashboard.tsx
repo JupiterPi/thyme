@@ -8,6 +8,7 @@ import ipc from "./ipc"
 import { getLatestVersion } from "./updates"
 import { version } from "./buildInfo"
 import { actions } from "../electron/schema"
+import { useDebounce } from "@uidotdev/usehooks"
 
 export function Dashboard() {
     const state = useContext(StateContext)
@@ -34,14 +35,6 @@ export function Dashboard() {
             setIsUpdateAvailable(latestVersion !== version)
         })
     }, [])
-
-    const [noteInput, setNoteInput] = useState("")
-    const [showNoteInputSuccessMessage, setShowNoteInputSuccessMessage] = useEphemeralState(false, 1000)
-    const submitNote = () => {
-        ipc.dispatch(actions.createNote({ text: noteInput }))
-        setNoteInput("")
-        setShowNoteInputSuccessMessage(true)
-    }
 
     return <>
 
@@ -71,7 +64,83 @@ export function Dashboard() {
             </div>
         </div>
 
-        {/* quick add note */}
+        {state.kimai === undefined ? <SelectActivityNormal /> : <SelectActivityKimai />}
+        <div className="-mt-8"></div> {/* less spacing */}
+        <AddNote />
+
+        {/* navigation buttons */}
+        <div className="flex gap-2">
+            <button className="_button" onClick={() => ipc.openPage("history")}>History</button>
+            <button className="_button" onClick={() => ipc.openPage("settings")}>
+                Settings
+                {isUpdateAvailable && <div className="bg-red-400 size-[10px] rounded-full absolute translate-y-[-30px] translate-x-[61px] animate-[ping_1432ms_infinite]"></div>}
+                {isUpdateAvailable && <div className="bg-red-400 size-[10px] rounded-full absolute translate-y-[-30px] translate-x-[61px]"></div>}
+            </button>
+        </div>
+    </>
+}
+
+function SelectActivityNormal() {
+    const state = useContext(StateContext)
+    const isActive = state.activeStartTime !== null
+
+    const [activityInput, setActivityInput] = useState("")
+    const debouncedActivityInput = useDebounce(activityInput, 200)
+    const [hasHadInput, setHasHadInput] = useState(false)
+    const debouncedHasHadInput = useDebounce(hasHadInput, 200)
+    useEffect(() => {
+        if (debouncedActivityInput.length === 0) {
+            if (debouncedHasHadInput) {
+                ipc.dispatch(actions.setActivity(null))
+            }
+        } else {
+            if (debouncedActivityInput !== state.activity?.name) {
+                ipc.dispatch(actions.setActivity({ name: debouncedActivityInput }))
+            }
+        }
+    }, [debouncedActivityInput, debouncedHasHadInput, state.activity])
+    useEffect(() => {
+        if (state.activity) setActivityInput(state.activity?.name ?? "")
+    }, [state.activity])
+
+    return <div className="flex w-43">
+        <input
+            disabled={isActive}
+            className="py-0.5 px-1.5 border border-green-400 bg-green-300 focus:border-1.5 focus:outline-none rounded-md p-2 flex-1 w-full font-regular text-center"
+            placeholder="(No Activity)"
+            value={activityInput}
+            onChange={e => { setActivityInput(e.target.value); setHasHadInput(true) }}
+        />
+    </div>
+}
+
+function SelectActivityKimai() {
+    const state = useContext(StateContext)
+    const isActive = state.activeStartTime !== null
+
+    return <div className="flex w-43">
+        <button
+            className={classNames("py-0.5 px-1.5 border border-green-400 bg-green-300 focus:border-1.5 focus:outline-none rounded-md p-2 flex-1 w-full font-regular text-center whitespace-nowrap overflow-hidden text-ellipsis", { "grayscale-100": isActive, "cursor-pointer": !isActive })}
+            onClick={() => !isActive && ipc.openPage("selectKimaiActivityDialog")}
+        >
+            {state.activity?.name || "No activity"}
+        </button>
+    </div>
+}
+
+function AddNote() {
+    const state = useContext(StateContext)
+    const isActive = state.activeStartTime !== null
+
+    const [noteInput, setNoteInput] = useState("")
+    const [showNoteInputSuccessMessage, setShowNoteInputSuccessMessage] = useEphemeralState(false, 1000)
+    const submitNote = () => {
+        ipc.dispatch(actions.createNote({ text: noteInput }))
+        setNoteInput("")
+        setShowNoteInputSuccessMessage(true)
+    }
+
+    return (
         <div className="flex gap-1 w-43">
             <input
                 disabled={!isActive}
@@ -83,16 +152,5 @@ export function Dashboard() {
             />
             {noteInput.length > 0 && <button className="_button" onClick={submitNote}>Note</button>}
         </div>
-
-        {/* navigation buttons */}
-        <div className="flex gap-2">
-            <button className="_button" onClick={() => ipc.openPage("history")}>History</button>
-            <button className="_button" onClick={() => ipc.openPage("settings")}>
-                Settings
-                {isUpdateAvailable && <div className="bg-red-400 size-[10px] rounded-full absolute translate-y-[-30px] translate-x-[61px] animate-[ping_1432ms_infinite]"></div>}
-                {isUpdateAvailable && <div className="bg-red-400 size-[10px] rounded-full absolute translate-y-[-30px] translate-x-[61px]"></div>}
-            </button>
-        </div>
-        
-    </>
+    )
 }

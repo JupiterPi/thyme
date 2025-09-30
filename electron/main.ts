@@ -22,8 +22,9 @@ export const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist")
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST
 
 const errors$ = new BehaviorSubject<string[]>([])
-export function displayError(err: string) {
-  errors$.next(errors$.getValue().concat([err]))
+export function showGlobalError(msg: string, err: unknown) {
+  console.error(err)
+  errors$.next(errors$.getValue().concat([`${msg}: ${err}`]))
 }
 
 const userDataDir = isDev ? path.join(process.env.APP_ROOT, "dev-data") : app.getPath("userData")
@@ -36,7 +37,7 @@ const persistentState = (() => {
   try {
     return new PersistentState(persistentStateFile)
   } catch (e) {
-    displayError(`Failed to load data.json: ${e}`)
+    showGlobalError("Failed to load data.json", e)
     return null as unknown as PersistentState
   }
 })()
@@ -104,7 +105,7 @@ export const PushIPC = {
     }
   },
   setTimelineDay: (date: string) => timelineDay$.next(date),
-  openPage: (page: "history" | "timeline" | "settings") => windowManager.openOrShowPage(pages[page]),
+  openPage: (page: "history" | "timeline" | "settings" | "selectKimaiActivityDialog") => windowManager.openOrShowPage(pages[page]),
   closePage: (pageId: string) => windowManager.closeWindow(pageId),
 } satisfies { [key in typeof ipcPushChannels[number]]: (...args: any[]) => any }
 
@@ -113,4 +114,5 @@ export const PullIPC = {
   state: persistentState.getState(),
   timelineDay: timelineDay$.pipe(filter(day => day !== null)),
   kimaiUsername: kimaiIntegration.username$,
+  kimaiProjectsAndActivities: kimaiIntegration.projectsAndActivities$,
 } satisfies { [key in typeof ipcPullChannels[number]]: Observable<any> }

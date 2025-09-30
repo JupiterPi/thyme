@@ -25,6 +25,7 @@ export function History() {
                     <div className="_button text-sm" onClick={() => ipc.exportCSV("byDay")}>export CSV (by day)</div>
                     <div className="_button text-sm" onClick={() => ipc.exportCSV("allEntries")}>export CSV (all entries)</div>
                 </div>
+                <div>⚠️ Activities are not yet displayed here.</div>
                 {/* time entries list */}
                 {timeEntriesGrouped.map((entries, dayIndex) => {
                     const totalDuration = entries.reduce((acc, entry) => acc + (entry.endTime.getTime() - entry.startTime.getTime()), 0)

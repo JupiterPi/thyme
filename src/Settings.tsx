@@ -30,6 +30,8 @@ export function Settings() {
             <h2 className="text-xl font-semibold mb-1 mt-4">Kimai</h2>
             <KimaiSection />
 
+            {/* todo: add manual? */}
+
         </div>
     )
 }

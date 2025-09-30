@@ -1,6 +1,6 @@
 import dateFormat from "dateformat"
 import { midnight } from "../util"
-import { Note, TimeEntry } from "../types"
+import { Note, TimeEntry } from "../schema"
 
 export class KimaiAPI {
     private url: string
@@ -23,7 +23,7 @@ export class KimaiAPI {
             body: JSON.stringify(body)
         })
         if (!response.ok) {
-            throw new Error(`Error fetching ${path}: ${response.statusText}`)
+            throw new Error(`Error fetching ${method} ${path}: ${response.statusText}\nBody: ${body ?? "none"}\nResponse: ${await response.text()}`)
         }
         return response
     }
@@ -41,7 +41,15 @@ export class KimaiAPI {
     // endpoints
 
     public async fetchCurrentUser() {
-        return await this.get<{ alias: string }>("/api/users/me")
+        return await this.get<{ alias: string, username: string }>("/api/users/me")
+    }
+
+    public async fetchProjects() {
+        return await this.get<{ id: number, name: string, globalActivities: boolean }[]>("/api/projects")
+    }
+
+    public async fetchActivities() {
+        return await this.get<{ id: number, name: string, project: number | null }[]>("/api/activities")
     }
 
     public async fetchThymeTimesheets(day: Date) {
@@ -56,7 +64,7 @@ export class KimaiAPI {
             activity: activityId,
             begin: formatDate(entry.startTime),
             end: formatDate(entry.endTime),
-            description: notes.map(note => `${dateFormat(note.time, "HH:mm")}: ${note.text}`).join("\n"),
+            description: notes.map(note => `${dateFormat(note.time, "HH:MM")}: ${note.text}`).join("\n"),
             tags: ["thyme"].join(","),
         })
     }

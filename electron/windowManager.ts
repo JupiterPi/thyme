@@ -5,10 +5,11 @@ import url from "url"
 
 export type Page = { id: string, width: number, height: number }
 export const pages: Record<string, Page> = {
-  dashboard: { id: "", width: 250, height: 425 },
+  dashboard: { id: "", width: 250, height: 460 },
   history: { id: "history", width: 500, height: 600 },
   timeline: { id: "timeline", width: 500, height: 800 },
   settings: { id: "settings", width: 350, height: 441 },
+  selectKimaiActivityDialog: { id: "selectKimaiActivityDialog", width: 400, height: 300 },
 }
 
 export class WindowManager {

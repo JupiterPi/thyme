@@ -12,4 +12,5 @@ export const ipcPullChannels = [
     "state",
     "timelineDay",
     "kimaiUsername",
+    "kimaiProjectsAndActivities",
 ] as const

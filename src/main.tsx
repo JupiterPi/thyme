@@ -11,6 +11,7 @@ import { isDev } from "./buildInfo"
 import { Timeline } from "./Timeline"
 import { useObservable } from "./util"
 import { defaultState, State } from "../electron/schema"
+import { SelectKimaiActivityDialog } from "./SelectKimaiActivityDialog"
 
 const pageId = window.location.search.startsWith("?pageId=") ? window.location.search.slice("?pageId=".length) : ""
 
@@ -19,6 +20,7 @@ const pages: { id: string, title?: string, component: JSX.Element }[] = [
   { id: "history", title: "History", component: <History /> },
   { id: "timeline", title: "Timeline", component: <Timeline /> },
   { id: "settings", title: "Settings", component: <Settings /> },
+  { id: "selectKimaiActivityDialog", title: "Select Kimai Activity", component: <SelectKimaiActivityDialog /> },
 ]
 const page = pages.find(page => page.id === (pageId.length > 0 ? pageId : "dashboard")) ?? { id: "", title: undefined, component: <div className="text-red-500">page not found</div> }
 
@@ -52,7 +54,7 @@ function Root() {
       <StateContext.Provider value={state}>
         <div className="p-5 flex flex-col items-center gap-5 w-full absolute top-7 bottom-0 overflow-y-auto">
           {errors.length === 0 && page.component}
-          {errors.length > 0 && <div className="text-red-500">{errors.map((err, i) => <div key={i}>{err}</div>)}</div>}
+          {errors.length > 0 && <div className="text-red-500 font-mono font-semibold text-sm">{errors.map((err, i) => <div key={i}>Error(s) occurred! See logs for more info <br/><br/>{err}</div>)}</div>}
         </div>
       </StateContext.Provider>
     </main>
