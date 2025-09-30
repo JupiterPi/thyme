@@ -37,7 +37,7 @@ export const Kimai = z.object({
     uploadedEntries: z.array(z.object({
         entry: TimeEntry,
         notes: z.array(Note),
-        timesheetId: z.number().int().nonnegative(), // todo: rename to kimaiTimesheetId
+        kimaiTimesheetId: z.number().int().nonnegative(),
     })).default([]),
 })
 export type Kimai = z.infer<typeof Kimai>

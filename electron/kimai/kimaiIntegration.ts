@@ -72,7 +72,7 @@ export function makeKimaiIntegration(persistentState: PersistentState) {
                     if (uploadedEntry === undefined || JSON.stringify(currentEntry.entry) !== JSON.stringify(uploadedEntry.entry) || JSON.stringify(currentEntry.entryNotes) !== JSON.stringify(uploadedEntry.notes)) {
                         if (uploadedEntry !== undefined) {
                             try {
-                                await api.deleteTimesheet(uploadedEntry.timesheetId)
+                                await api.deleteTimesheet(uploadedEntry.kimaiTimesheetId)
                                 console.log("Deleted outdated entry: ", uploadedEntry.entry.startTime)
                             } catch (e) {
                                 showGlobalError("Failed to delete Kimai entry", e)
@@ -82,7 +82,7 @@ export function makeKimaiIntegration(persistentState: PersistentState) {
                         try {
                             const { id: timesheetId } = await api.createThymeTimesheet(kimaiActivity.projectId, kimaiActivity.activityId, currentEntry.entry, currentEntry.entryNotes)
                             console.log("Created entry: ", currentEntry.entry.startTime)
-                            return { entry: currentEntry.entry, notes: currentEntry.entryNotes, timesheetId }
+                            return { entry: currentEntry.entry, notes: currentEntry.entryNotes, kimaiTimesheetId: timesheetId }
                         } catch (e) {
                             showGlobalError("Failed to create Kimai entry", e)
                             return uploadedEntry
@@ -99,7 +99,7 @@ export function makeKimaiIntegration(persistentState: PersistentState) {
                     const currentEntry = currentEntries.find(currentEntry => currentEntry.entry.id === uploadedEntry.entry.id)
                     if (currentEntry === undefined) {
                         try {
-                            await api.deleteTimesheet(uploadedEntry.timesheetId)
+                            await api.deleteTimesheet(uploadedEntry.kimaiTimesheetId)
                             console.log("Deleted entry: ", uploadedEntry.entry.startTime)
                         } catch (e) {
                             showGlobalError("Failed to delete Kimai entry", e)
