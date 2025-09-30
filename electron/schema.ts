@@ -65,6 +65,7 @@ export const { actions, actionResolver } = createActionsWithImmer<State>()({
                 endTime: new Date(),
                 activity: state.activity ?? undefined
             })
+            state.timeEntries = normalizeTimeEntries(state.timeEntries)
             state.activeStartTime = null
         }
     },
@@ -74,13 +75,16 @@ export const { actions, actionResolver } = createActionsWithImmer<State>()({
     },
     createTimeEntry: (entry: Omit<TimeEntry, "id">) => state => {
         state.timeEntries.push(entry as TimeEntry)
+        state.timeEntries = normalizeTimeEntries(state.timeEntries)
     },
     updateTimeEntry: (entry: TimeEntry) => state => {
         state.timeEntries = state.timeEntries.filter(e => e.id !== entry.id)
         state.timeEntries.push(entry)
+        state.timeEntries = normalizeTimeEntries(state.timeEntries)
     },
     deleteTimeEntry: (entry: TimeEntry) => state => {
         state.timeEntries = state.timeEntries.filter(e => e.id !== entry.id)
+        state.timeEntries = normalizeTimeEntries(state.timeEntries)
     },
     createNote: (note: Omit<Note, "id" | "time">) => state => {
         state.notes.push(note as Note)
@@ -106,14 +110,16 @@ export const { actions, actionResolver } = createActionsWithImmer<State>()({
     },
 })
 
-// todo: it seems liek normalizeTimeEntries is not used anymore, fix that!
-export const mergeThreshold = 1 * 60 * 1000
+export const mergeThreshold = 1 * 60 * 1000 // 1 minute
 export function normalizeTimeEntries(entries: TimeEntry[]) {
     const mergeEntries = (a: TimeEntry, b: TimeEntry): TimeEntry => {
         const timeBounds = [a.startTime, a.endTime, b.startTime, b.endTime].map(t => t.getTime()).toSorted()
         const startTime = new Date(timeBounds[0])
         const endTime = new Date(timeBounds[3])
-        return { id: randomUUID(), startTime, endTime }
+        if (JSON.stringify(a.activity) !== JSON.stringify(b.activity)) {
+            throw Error("Cannot merge entries with different activities")
+        }
+        return { id: randomUUID(), startTime, endTime, activity: a.activity }
     }
     const splitEntry = (entry: TimeEntry, splitTime: Date): [TimeEntry, TimeEntry] => {
         return [
@@ -150,7 +156,7 @@ export function normalizeTimeEntries(entries: TimeEntry[]) {
     // sort entries
     const sortedEntries = entries.sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
     
-    const mergedEntries: TimeEntry[] = []
+    const handledEntries: TimeEntry[] = []
     let currentEntry: TimeEntry | undefined = undefined
     for (const entry of sortedEntries) {
         if (currentEntry === undefined) {
@@ -163,17 +169,19 @@ export function normalizeTimeEntries(entries: TimeEntry[]) {
             entry.startTime.getTime() - currentEntry.endTime.getTime() <= mergeThreshold
             // don't merge over midnight
             && currentEntry.startTime.toLocaleDateString() === entry.startTime.toLocaleDateString()
+            // don't merge entries with different activities
+            && JSON.stringify(currentEntry.activity) === JSON.stringify(entry.activity)
         ) {
             currentEntry = mergeEntries(currentEntry, entry)
         } else {
             // otherwise push the current entry and start a new one
-            mergedEntries.push(currentEntry)
+            handledEntries.push(currentEntry)
             currentEntry = entry
         }
     }
     if (currentEntry) {
-        mergedEntries.push(currentEntry)
+        handledEntries.push(currentEntry)
     }
     
-    return mergedEntries
+    return handledEntries
 }
