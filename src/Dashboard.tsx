@@ -101,6 +101,7 @@ function SelectActivityKimai() {
         <button
             className={classNames("py-0.5 px-1.5 border border-green-400 bg-green-300 focus:border-1.5 focus:outline-none rounded-md p-2 flex-1 w-full font-regular text-center whitespace-nowrap overflow-hidden text-ellipsis", { "grayscale-100": isActive, "cursor-pointer": !isActive })}
             onClick={() => !isActive && ipc.openPage("selectKimaiActivityDialog")}
+            title={state.activity?.name}
         >
             {state.activity?.name || "No activity"}
         </button>
