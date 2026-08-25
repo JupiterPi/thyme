@@ -22,6 +22,6 @@ _**Thyme** is a stopwatch in your taskbar with history, notes and a [Kimai](http
 - Export your data in CSV format.
 - **[Kimai](https://www.kimai.org) integration:** Simply bring your domain and API key. Choose a project and activity from Kimai for new entries. All future entries will be synced to Kimai, including notes.
 
-Thyme is in development, and more features are on the way. 
+Thyme is in stagnant development, but more features might come in the future. 
 
 I hope you enjoy using Thyme 🌿
